@@ -4,7 +4,7 @@ function Game() {
     return (
         <Container>
             <Typography variant="h4">Spiel läuft...</Typography>
-            {/* Dein Spiel-Inhalt kommt hier */}
+            {/* TODO GAME CONTENT */}
         </Container>
     );
 }

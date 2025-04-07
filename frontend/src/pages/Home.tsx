@@ -1,85 +1,100 @@
 // src/pages/Home.tsx
 import { Button, Typography, Container, Box } from "@mui/material";
+// @ts-ignore
+import { triangleBackground } from "../styles/triangleBackground.ts"
+import { starBackground } from "../styles/starBackground.ts";
 
-const pastelColors = {
-    lightBlue: "#A2C8FC",
-    lightGreen: "#A3D9A5",
-    lightYellow: "#F6E06D",
-    backgroundStart: "#F0F8FF",  // Anfangsfarbe des Farbverlaufs
-    backgroundEnd: "#A3D9A5",    // Endfarbe des Farbverlaufs
-    text: "#333",
+const Colors = {
+    buttonColor: "#3fc1c9",
+    randomGameButton: "#AA6DA3",
+    privateGameButton: "#33658a",
+    gamePerIdButton: "#f68e5f",
+    text: "#393E46",
 };
 
 function Home() {
     return (
         <Container
             style={{
-                background: `linear-gradient(to bottom right, ${pastelColors.backgroundStart}, ${pastelColors.backgroundEnd})`,
+                ...starBackground,
                 minHeight: "100vh",
                 paddingTop: "50px",
+                minWidth: "100%",
             }}
         >
             <Typography
-                variant="h3"
+                variant="h1"
                 align="center"
-                style={{
+                sx={{
                     margin: "20px",
-                    color: pastelColors.text,
+                    color: Colors.text,
                     fontFamily: "'Super Larky', cursive",
                     fontWeight: 600,
                 }}
             >
                 Just One Word
             </Typography>
+
             <Box display="flex" flexDirection="column" alignItems="center" gap="20px">
                 <Button
                     variant="contained"
-                    style={{
-                        backgroundColor: pastelColors.lightBlue,
-                        color: "#FFF",
-                        padding: "15px 30px",
+                    href="/random-game"
+                    sx={{
+                        backgroundColor: Colors.randomGameButton,
+                        color: "#EEEEEE",
+                        padding: "20px 40px",
                         borderRadius: "8px",
                         textTransform: "none",
                         fontFamily: "'Super Larky', cursive",
                         fontWeight: "normal",
-                        fontSize: "1.2rem",
+                        fontSize: "30px",
                         boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+                        "&:hover": {
+                            backgroundColor: "#8a5089", // dunklerer Ton
+                        },
                     }}
-                    href="/random-game"
                 >
-                    Zufälliges Spiel beitreten
+                    Zufälligem Spiel beitreten
                 </Button>
+
                 <Button
                     variant="contained"
-                    style={{
-                        backgroundColor: pastelColors.lightGreen,
-                        color: "#FFF",
-                        padding: "15px 30px",
+                    href="/create-game"
+                    sx={{
+                        backgroundColor: Colors.privateGameButton,
+                        color: "#EEEEEE",
+                        padding: "20px 40px",
                         borderRadius: "8px",
                         textTransform: "none",
                         fontFamily: "'Super Larky', cursive",
                         fontWeight: "normal",
-                        fontSize: "1.2rem",
+                        fontSize: "30px",
                         boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+                        "&:hover": {
+                            backgroundColor: "#254e6a",
+                        },
                     }}
-                    href="/create-game"
                 >
                     Privates Spiel erstellen
                 </Button>
+
                 <Button
                     variant="contained"
-                    style={{
-                        backgroundColor: pastelColors.lightYellow,
-                        color: "#FFF",
-                        padding: "15px 30px",
+                    href="/join-game"
+                    sx={{
+                        backgroundColor: Colors.gamePerIdButton,
+                        color: "#EEEEEE",
+                        padding: "20px 40px",
                         borderRadius: "8px",
                         textTransform: "none",
                         fontFamily: "'Super Larky', cursive",
                         fontWeight: "normal",
-                        fontSize: "1.2rem",
+                        fontSize: "30px",
                         boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+                        "&:hover": {
+                            backgroundColor: "#d87345",
+                        },
                     }}
-                    href="/join-game"
                 >
                     Spiel per ID beitreten
                 </Button>
