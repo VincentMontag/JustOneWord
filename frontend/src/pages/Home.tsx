@@ -38,7 +38,7 @@ function Home() {
             <Box display="flex" flexDirection="column" alignItems="center" gap="20px">
                 <Button
                     variant="contained"
-                    href="/random-game"
+                    href="/create-game"
                     sx={{
                         backgroundColor: Colors.randomGameButton,
                         color: "#EEEEEE",
@@ -54,12 +54,12 @@ function Home() {
                         },
                     }}
                 >
-                    Zufälligem Spiel beitreten
+                    Spiel erstellen
                 </Button>
 
                 <Button
                     variant="contained"
-                    href="/create-game"
+                    href="/random-game"
                     sx={{
                         backgroundColor: Colors.privateGameButton,
                         color: "#EEEEEE",
@@ -75,7 +75,7 @@ function Home() {
                         },
                     }}
                 >
-                    Privates Spiel erstellen
+                    Zufälligem Spiel beitreten
                 </Button>
 
                 <Button

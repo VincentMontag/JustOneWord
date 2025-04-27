@@ -1,6 +1,6 @@
 import { Container, Typography } from "@mui/material";
 
-function Game() {
+function CreateGame() {
     return (
         <Container>
             <Typography variant="h4">Spiel läuft...</Typography>
@@ -9,4 +9,4 @@ function Game() {
     );
 }
 
-export default Game;
+export default CreateGame;

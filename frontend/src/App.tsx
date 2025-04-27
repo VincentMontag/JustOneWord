@@ -1,7 +1,8 @@
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Home from "./pages/Home";
-import Game from "./pages/Game";
-import JoinGame from "./pages/JoinGame";
+import CreateGame from "./pages/CreateGame.tsx";
+import JoinRandom from "./pages/JoinRandom.tsx";
+import RolePage from "./pages/RolePage.tsx";  // Importiere die RolePage
 import './assets/fonts/fonts.css';
 
 function App() {
@@ -9,10 +10,9 @@ function App() {
         <Router>
             <Routes>
                 <Route path="/" element={<Home />} />
-                <Route path="/random-game" element={<Game />} />
-                <Route path="/create-game" element={<Game />} />
-                <Route path="/join-game" element={<JoinGame />} />
-            </Routes>
+                <Route path="/random-game" element={<JoinRandom />} />
+                <Route path="/create-game" element={<CreateGame />} />
+                <Route path="/role" element={<RolePage />} />           </Routes>
         </Router>
     );
 }

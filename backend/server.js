@@ -1,27 +1,29 @@
-import express from 'express';
-import { Server } from 'socket.io';
-import http from 'http';
-import cors from 'cors';
-import dotenv from 'dotenv';
+import express from "express";
+import http from "http";
+import { Server } from "socket.io";
+import dotenv from "dotenv";
+import cors from "cors";
+import { socketHandlers } from "./socketHandlers.js"; // Socket.IO-Handler importieren
 
 dotenv.config();
+
 const app = express();
 const server = http.createServer(app);
+
 const io = new Server(server, {
-    cors: { origin: "*" }
+    cors: {
+        origin: 'http://localhost:5173', // Die URL des Frontends
+        methods: ['GET', 'POST'],
+    },
 });
 
-io.on('connection', (socket) => {
-    console.log(`🔗 Client verbunden: ${socket.id}`);
+app.use(express.json());
+app.use(cors());
 
-    socket.on('send-word', (word) => {
-        io.emit('new-word', word); // Broadcast an alle Clients
-    });
+// Socket.IO-Logik in eigene Datei auslagern
+socketHandlers(io);
 
-    socket.on('disconnect', () => {
-        console.log(`❌ Client getrennt: ${socket.id}`);
-    });
+const PORT = 5000;
+server.listen(PORT, () => {
+    console.log(`Server läuft auf Port ${PORT}`);
 });
-
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`🚀 Server läuft auf Port ${PORT}`));
