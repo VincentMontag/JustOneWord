@@ -1,11 +1,8 @@
 import express from "express";
 import http from "http";
 import { Server } from "socket.io";
-import dotenv from "dotenv";
 import cors from "cors";
 import { socketHandlers } from "./socketHandlers.js"; // Socket.IO-Handler importieren
-
-dotenv.config();
 
 const app = express();
 const server = http.createServer(app);

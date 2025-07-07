@@ -3,47 +3,57 @@ import { Typography, Container, Box, CircularProgress } from "@mui/material";
 import { useLocation } from "react-router-dom";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { initializeApp } from "firebase/app";
-import { firebaseConfig } from "../firebaseConfig.ts"; // Dein Firebase-Konfigurationsimport
+import { firebaseConfig } from "../firebaseConfig.ts";
 
+// Firebase initialisieren
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 const RolePage = () => {
     const { state } = useLocation();
-    console.log("State beim Laden der Rolle:", state);  // Debugging-Ausgabe
-
     const [role, setRole] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (state?.name) {
-            console.log("Name aus state:", state.name);  // Überprüfen, ob der Name korrekt übergeben wird
+        if (state?.gameId && state?.name) {
             const fetchRole = async () => {
                 try {
-                    const docRef = doc(db, "roles", state.name);
+                    console.log("🔍 gameId:", state.gameId);
+                    console.log("🔍 name:", state.name);
+
+                    const docRef = doc(db, "games", state.gameId);
                     const docSnap = await getDoc(docRef);
 
                     if (docSnap.exists()) {
-                        setRole(docSnap.data().role);
+                        const gameData = docSnap.data();
+                        console.log("✅ Dokumentinhalt:", gameData);
+
+                        const playerData = gameData.rolesMap?.[state.name]; // <-- Korrektur hier!
+
+                        if (playerData) {
+                            setRole(playerData.role);
+                        } else {
+                            setError(`Spieler "${state.name}" nicht gefunden.`);
+                        }
                     } else {
-                        console.log("Keine Rolle gefunden.");
-                        setRole(null);  // Rolle zu null setzen, wenn keine gefunden wurde
+                        console.error("❌ Dokument existiert nicht.");
+                        setError(`Spiel mit ID ${state.gameId} nicht gefunden.`);
                     }
                 } catch (error) {
                     console.error("Fehler beim Abrufen der Rolle:", error);
-                    setError("Fehler beim Abrufen der Rolle.");  // Fehler setzen
+                    setError("Fehler beim Abrufen der Rolle.");
                 } finally {
-                    setLoading(false); // Ladeprozess beenden
+                    setLoading(false);
                 }
             };
 
             fetchRole();
         } else {
-            setError("Kein Name in state übergeben.");
-            setLoading(false);  // Ladeprozess beenden, wenn kein Name übergeben wurde
+            setError("Keine Spiel-ID oder kein Name übergeben.");
+            setLoading(false);
         }
-    }, [state?.name]);  // Nur ausführen, wenn der Name sich ändert
+    }, [state?.gameId, state?.name]);
 
     return (
         <Container
@@ -71,7 +81,7 @@ const RolePage = () => {
                             fontSize: "2rem",
                         }}
                     >
-                        Deine Rolle: {role ? role : "Rolle noch nicht zugewiesen."}
+                        Deine Rolle: {role ?? "Rolle noch nicht zugewiesen."}
                     </Typography>
                 )}
             </Box>

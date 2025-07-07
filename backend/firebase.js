@@ -1,16 +1,13 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import dotenv from "dotenv";
-
-dotenv.config();
 
 const firebaseConfig = {
-    apiKey: process.env.FIREBASE_API_KEY,
-    authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.FIREBASE_APP_ID,
+    apiKey: "AIzaSyAgY82tEYmSix0ozT1xtX7wL1Jdk-1VTdA",
+    authDomain: "just-one-word-f0d8c.firebaseapp.com",
+    projectId: "just-one-word-f0d8c",
+    storageBucket: "just-one-word-f0d8c.firebasestorage.app",
+    messagingSenderId: "405607158105",
+    appId: "1:405607158105:web:fa9bf11e41239c6fd83c48"
 };
 
 const app = initializeApp(firebaseConfig);

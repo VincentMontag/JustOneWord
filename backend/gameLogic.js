@@ -1,33 +1,26 @@
 import { setDoc, doc } from "firebase/firestore";
-import { db } from './firebase.js'; // Importiere die Firestore-Datenbankinstanz
+import { db } from './firebase.js';
+import { v4 as uuidv4 } from "uuid";
+import { startGame, games, loadRandomWord } from './GameManager.js'; // loadRandomWord importieren
 
-// Funktion zur zufälligen Rollenzuweisung
 export async function assignRoles(queue, io) {
-    // Die verfügbaren Rollen
-    const roles = ["Ratender", "Unterstützer", "Saboteur"];
-    const playersCopy = [...queue]; // Eine Kopie der Warteschlange
-    const randomIndex = Math.floor(Math.random() * playersCopy.length); // Zufälliger Index für den Ratenden
+    const playersCopy = [...queue];
+    const randomIndex = Math.floor(Math.random() * playersCopy.length);
     const ratender = playersCopy[randomIndex];
-
-    // Der Ratende wird aus der Liste entfernt, damit er nicht nochmal als Unterstützer oder Saboteur gewählt wird
     playersCopy.splice(randomIndex, 1);
-
-    // Ermitteln der Anzahl der Unterstützer (aufgerundete Hälfte der verbleibenden Spieler)
     const numSupporters = Math.ceil(playersCopy.length / 2);
 
-    // Zufällig die Unterstützer auswählen
     const supporters = [];
     for (let i = 0; i < numSupporters; i++) {
         const randomSupporterIndex = Math.floor(Math.random() * playersCopy.length);
         supporters.push(playersCopy[randomSupporterIndex]);
-        playersCopy.splice(randomSupporterIndex, 1); // Entferne den Unterstützer aus der Liste
+        playersCopy.splice(randomSupporterIndex, 1);
     }
 
-    // Der Rest der Spieler sind Saboteure
     const saboteurs = playersCopy;
+    const gameId = uuidv4();
+    const rolesMap = {};
 
-    // Weisen Sie den Spielern ihre Rollen zu und speichern Sie sie in Firestore
-    let i = 0;
     for (const player of queue) {
         let role = "";
 
@@ -39,19 +32,40 @@ export async function assignRoles(queue, io) {
             role = "Saboteur";
         }
 
-        // Speichern in Firestore
-        await setDoc(doc(db, "roles", player.name), {
-            role: role,
+        rolesMap[player.name] = {
+            role,
             socketId: player.id,
-        });
+        };
 
-        // Sende die Rolle an den entsprechenden Spieler
         const playerSocket = io.sockets.sockets.get(player.id);
         if (playerSocket) {
-            playerSocket.emit("role-assigned", { role: role });
+            // gameId und Rolle mitgeben
+            playerSocket.emit("role-assigned", { role, gameId });
         }
     }
 
-    // Leere die Warteschlange, nachdem die Zuweisung abgeschlossen ist
-    queue = [];
+    const solutionWord = await loadRandomWord();
+
+    const gameDoc = {
+        rolesMap,
+        solutionWord,
+        expectedSubmitters: supporters.length + saboteurs.length,
+        players: queue.map(p => p.name),
+    };
+
+    await setDoc(doc(db, "games", gameId), gameDoc);
+
+    // Spielzustand auch im Server-Cache halten
+    games[gameId] = {
+        ...gameDoc,
+        phase: null,
+        round: 0,
+        revealedLetters: new Set(),
+        isFinished: false,
+    };
+
+    startGame(gameId);
+    queue.length = 0;
+
+    return gameId;
 }

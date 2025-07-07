@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
 import { Box, Button, TextField, Typography, Container } from "@mui/material";
 import { starBackground } from "../styles/starBackground.ts";
-import io from "socket.io-client";
 import { useNavigate } from "react-router-dom";
-
-const socket = io("http://localhost:5000");
+import socket from "../socket.ts"
 
 function JoinRandom() {
     const [name, setName] = useState("");
@@ -17,9 +15,8 @@ function JoinRandom() {
             setQueueSize(size);
         });
 
-        // Wenn Rolle zugewiesen wurde, auf /role weiterleiten
-        socket.on("role-assigned", () => {
-            navigate("/role", { state: { name } });
+        socket.on("role-assigned", ({ gameId }) => {
+            navigate("/role", { state: { name, gameId } });
         });
 
         return () => {
