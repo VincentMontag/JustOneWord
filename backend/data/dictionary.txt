@@ -47,7 +47,6 @@ Lippe
 Quelle
 Lager
 Spule
-Hütte
 Kette
 Zug
 Trank
@@ -68,7 +67,6 @@ Schale
 Kerze
 Puppe
 Haken
-Mütze
 Zange
 Nadel
 Wippe
@@ -147,7 +145,7 @@ Reif
 Kopf
 Arm
 Bein
-Fuß
+Fuss
 Hand
 Ohr
 Aug
@@ -156,7 +154,6 @@ Mund
 Zahn
 Haut
 Knie
-Rücken
 Schulter
 Brust
 Bauch
@@ -173,18 +170,13 @@ Karte
 Tafel
 Flocke
 Flamme
-Flügel
 Pflanze
-Blüte
-Brücke
 Grube
-Höhle
 Klippe
 Schacht
 Truhe
 Arm
 Auge
-Fuß
 Ast
 Schatten
 Sonne
@@ -195,10 +187,9 @@ See
 Bach
 Sand
 Tal
-Hügel
 Tor
 Weg
-Straße
+Strasse
 Platz
 Tor
 Gasse
@@ -216,7 +207,6 @@ Park
 Hof
 Kloster
 Tempel
-Universität
 Bibliothek
 Kirche
 Moschee
@@ -228,7 +218,6 @@ Oper
 Cafe
 Restaurant
 Hotel
-Bäckerei
 Metzgerei
 Apotheke
 Krankenhaus
@@ -236,7 +225,6 @@ Polizei
 Feuerwehr
 Post
 Bank
-Büro
 Werkstatt
 Fabrik
 Laden
@@ -254,7 +242,6 @@ Motorrad
 Fahrrad
 Helm
 Brille
-Schlüssel
 Tasche
 Brief
 Telefon
@@ -298,8 +285,6 @@ Ameise
 Spinne
 Fuchs
 Wolf
-Bär
-Löwe
 Tiger
 Elefant
 Kamel
