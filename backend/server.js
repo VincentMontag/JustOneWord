@@ -2,23 +2,35 @@ import express from "express";
 import http from "http";
 import { Server } from "socket.io";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from 'url';
 import { socketHandlers } from "./socketHandlers.js"; // Socket.IO-Handler importieren
 import { games } from "./GameManager.js"; // GameManager für Status-Endpoint
 import { db } from "./firebase.js"; // Firebase für Fallback
 import { doc, getDoc } from "firebase/firestore";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const server = http.createServer(app);
 
 const io = new Server(server, {
     cors: {
-        origin: 'http://localhost:5173', // Die URL des Frontends
+        origin: process.env.NODE_ENV === 'production'
+            ? true  // Allows all origins in production
+            : 'http://localhost:5173', // Die URL des Frontends für Development
         methods: ['GET', 'POST'],
     },
 });
 
 app.use(express.json());
 app.use(cors());
+
+// Serve React Build Files (für Production)
+if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(path.join(__dirname, 'build')));
+}
 
 // ERWEITETER Status-Endpoint für Polling (mit Submissions und allen Details)
 app.get('/api/games/:gameId/status', async (req, res) => {
@@ -127,7 +139,8 @@ app.get('/api/health', (req, res) => {
         status: 'OK',
         timestamp: new Date().toISOString(),
         activeGames: activeGames.length,
-        gameDetails: gameDetails
+        gameDetails: gameDetails,
+        environment: process.env.NODE_ENV || 'development'
     });
 });
 
@@ -168,13 +181,24 @@ app.get('/api/games/:gameId/debug', (req, res) => {
     }
 });
 
-// Socket.IO-Logik in eigene Datei auslagern
+// React App für alle anderen Routes (Production only)
+if (process.env.NODE_ENV === 'production') {
+    app.get('*', (req, res) => {
+        // Don't serve React app for API routes
+        if (req.path.startsWith('/api/')) {
+            return res.status(404).json({ error: 'API route not found' });
+        }
+        res.sendFile(path.join(__dirname, 'build', 'index.html'));
+    });
+}
+
 socketHandlers(io);
 
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
     console.log(`🚀 Server läuft auf Port ${PORT}`);
-    console.log(`📊 Status-Endpoint: http://localhost:${PORT}/api/games/:gameId/status`);
-    console.log(`💚 Health Check: http://localhost:${PORT}/api/health`);
-    console.log(`🔧 Debug-Endpoint: http://localhost:${PORT}/api/games/:gameId/debug`);
+
+    if (process.env.NODE_ENV === 'production') {
+        console.log(`🎮 React App wird auch von diesem Server gehostet!`);
+    }
 });

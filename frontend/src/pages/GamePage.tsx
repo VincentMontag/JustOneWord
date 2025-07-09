@@ -1,5 +1,6 @@
 // GamePage.tsx - Komplette Version mit einfachem Polling
 
+// @ts-ignore
 import React, { useEffect, useState, useRef } from "react";
 import { Typography, Container, Box, TextField, Button, CircularProgress, Card, CardContent, LinearProgress, Chip, Alert } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -178,6 +179,7 @@ const GamePage = () => {
                     }
                 }
             } catch (error) {
+                // @ts-ignore
                 console.warn("⚠️ Polling-Fehler:", error.message);
             }
         }, 1500); // Jede 1,5 Sekunden
