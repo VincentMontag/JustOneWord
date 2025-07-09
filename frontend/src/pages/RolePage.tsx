@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Typography, Container, Box, CircularProgress, Button } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
+import { starBackground } from "../styles/starBackground.ts";
 import socket from "../socket.ts";
 
 const RolePage = () => {
@@ -143,11 +144,11 @@ const RolePage = () => {
     const getRoleDescription = (role: string): string => {
         switch (role) {
             case "GUESSER":
-                return "Du musst das Lösungswort erraten! Nutze die Hinweise der anderen Spieler.";
+                return "Du bist der Ratender! Ein deutsches Substantiv wartet auf dich – ohne Umlaute und Sonderzeichen. Kannst du die richtigen Tipps erkennen oder führt man dich hinters Licht?";
             case "SUPPORTER":
-                return "Hilf dem Ratenden mit guten Hinweisen - aber pass auf die Saboteure auf!";
+                return "Gib clevere Hinweise, damit der Ratende das Wort knackt! Aber Vorsicht: Wenn du das gleiche Wort wie ein anderer nennst, fliegt es raus. Und die Saboteure? Die spielen auch mit ...";
             case "SABOTEUR":
-                return "Verwirre den Ratenden mit falschen Hinweisen, ohne dabei aufzufallen!";
+                return "Täusche den Ratenden mit falschen Tipps! Und wenn du das gleiche Wort wie ein Supporter nennst, wird’s gestrichen – perfekt für Verwirrung!";
             default:
                 return "";
         }
@@ -171,18 +172,28 @@ const RolePage = () => {
         }
     };
 
+    // Container Style für konsistenten Sternenhintergrund
+    const containerStyle = {
+        ...starBackground,
+        minHeight: "100vh",
+        minWidth: "100vw",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        margin: 0,
+        padding: 0,
+        position: "fixed" as const,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+    };
+
     // Render Loading State
     if (loading) {
         return (
-            <Container
-                style={{
-                    minHeight: "100vh",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                }}
-            >
-                <CircularProgress />
+            <Container style={containerStyle}>
+                <CircularProgress sx={{ color: "#3fc1c9" }} />
             </Container>
         );
     }
@@ -190,16 +201,14 @@ const RolePage = () => {
     // Render Error State
     if (error) {
         return (
-            <Container
-                style={{
-                    minHeight: "100vh",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                }}
-            >
+            <Container style={containerStyle}>
                 <Box display="flex" flexDirection="column" alignItems="center" gap={3}>
-                    <Typography variant="h6" color="error" align="center">
+                    <Typography
+                        variant="h6"
+                        color="error"
+                        align="center"
+                        sx={{ fontFamily: "'Super Larky', cursive" }}
+                    >
                         {error}
                     </Typography>
                     <Button
@@ -208,6 +217,10 @@ const RolePage = () => {
                         sx={{
                             fontFamily: "'Super Larky', cursive",
                             fontSize: "1.2rem",
+                            backgroundColor: "#3fc1c9",
+                            "&:hover": {
+                                backgroundColor: "#33a1a8",
+                            },
                         }}
                     >
                         Zurück zur Startseite
@@ -220,14 +233,7 @@ const RolePage = () => {
     // Render Game Starting State
     if (gameStarted) {
         return (
-            <Container
-                style={{
-                    minHeight: "100vh",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                }}
-            >
+            <Container style={containerStyle}>
                 <Box display="flex" flexDirection="column" alignItems="center" gap="20px">
                     <Typography
                         variant="h4"
@@ -241,11 +247,15 @@ const RolePage = () => {
                         🎮 Spiel startet!
                     </Typography>
 
-                    <Typography variant="h6" color="primary">
+                    <Typography
+                        variant="h6"
+                        color="primary"
+                        sx={{ fontFamily: "'Super Larky', cursive" }}
+                    >
                         Weiterleitung in {countdown} Sekunden...
                     </Typography>
 
-                    <CircularProgress />
+                    <CircularProgress sx={{ color: "#3fc1c9" }} />
 
                     <Button
                         variant="contained"
@@ -255,6 +265,10 @@ const RolePage = () => {
                             mt: 2,
                             fontFamily: "'Super Larky', cursive",
                             fontSize: "1.2rem",
+                            backgroundColor: "#3fc1c9",
+                            "&:hover": {
+                                backgroundColor: "#33a1a8",
+                            },
                         }}
                     >
                         Jetzt beitreten
@@ -266,14 +280,7 @@ const RolePage = () => {
 
     // Render Main Role Display
     return (
-        <Container
-            style={{
-                minHeight: "100vh",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-            }}
-        >
+        <Container style={containerStyle}>
             <Box display="flex" flexDirection="column" alignItems="center" gap="30px" textAlign="center">
                 {/* Titel */}
                 <Typography
@@ -314,16 +321,24 @@ const RolePage = () => {
                 {role && (
                     <Box
                         sx={{
-                            backgroundColor: "#f5f5f5",
+                            backgroundColor: "rgba(245, 245, 245, 0.9)",
                             padding: "20px",
                             borderRadius: "8px",
                             maxWidth: "500px",
+                            backdropFilter: "blur(5px)",
                         }}
                     >
-                        <Typography variant="h6" gutterBottom>
+                        <Typography
+                            variant="h6"
+                            gutterBottom
+                            sx={{ fontFamily: "'Super Larky', cursive" }}
+                        >
                             Deine Aufgabe:
                         </Typography>
-                        <Typography variant="body1">
+                        <Typography
+                            variant="body1"
+                            sx={{ fontFamily: "'Super Larky', cursive" }}
+                        >
                             {getRoleDescription(role)}
                         </Typography>
                     </Box>
@@ -331,21 +346,44 @@ const RolePage = () => {
 
                 {/* Ready Status */}
                 <Box textAlign="center">
-                    <Typography variant="h6" color="text.secondary" gutterBottom>
+                    <Typography
+                        variant="h6"
+                        color="text.secondary"
+                        gutterBottom
+                        sx={{
+                            fontFamily: "'Super Larky', cursive",
+                            color: "#393E46"
+                        }}
+                    >
                         {readyPlayers.length === totalPlayers ?
                             "🎯 Alle Spieler sind bereit!" :
                             "⏳ Warte auf andere Spieler..."
                         }
                     </Typography>
 
-                    <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+                    <Typography
+                        variant="body1"
+                        color="text.secondary"
+                        sx={{
+                            mb: 2,
+                            fontFamily: "'Super Larky', cursive",
+                            color: "#666"
+                        }}
+                    >
                         Bereite Spieler: {readyPlayers.length}/{totalPlayers}
                     </Typography>
 
                     {/* Liste der bereiten Spieler */}
                     {readyPlayers.length > 0 && (
                         <Box sx={{ mb: 2 }}>
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{
+                                    fontFamily: "'Super Larky', cursive",
+                                    color: "#666"
+                                }}
+                            >
                                 Bereit: {readyPlayers.join(", ")}
                             </Typography>
                         </Box>
@@ -382,7 +420,13 @@ const RolePage = () => {
                         sx={{
                             fontFamily: "'Super Larky', cursive",
                             fontSize: "1rem",
-                            padding: "15px 20px"
+                            padding: "15px 20px",
+                            borderColor: "#AA6DA3",
+                            color: "#AA6DA3",
+                            "&:hover": {
+                                borderColor: "#8a5089",
+                                backgroundColor: "rgba(170, 109, 163, 0.1)"
+                            }
                         }}
                     >
                         Zurück zur Startseite
@@ -391,7 +435,14 @@ const RolePage = () => {
 
                 {/* Spiel-Info */}
                 <Box sx={{ mt: 2 }}>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{
+                            fontFamily: "'Super Larky', cursive",
+                            color: "#666"
+                        }}
+                    >
                         Spiel-ID: {state?.gameId} | Spieler: {state?.name}
                     </Typography>
                 </Box>

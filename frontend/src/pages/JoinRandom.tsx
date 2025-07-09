@@ -120,22 +120,49 @@ function JoinRandom() {
             style={{
                 ...starBackground,
                 minHeight: "100vh",
+                minWidth: "100vw", // Sorgt dafür, dass der Hintergrund die gesamte Breite abdeckt
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
+                margin: 0, // Entfernt Standard-Margin
+                padding: 0, // Entfernt Standard-Padding
+                position: "fixed", // Fixiert den Container für vollständige Abdeckung
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
             }}
         >
             <Box display="flex" flexDirection="column" gap="20px" alignItems="center" maxWidth="400px" width="100%">
                 {/* Connection Status */}
                 {!isConnected && (
-                    <Alert severity="warning" sx={{ width: "100%" }}>
+                    <Alert
+                        severity="warning"
+                        sx={{
+                            width: "100%",
+                            fontFamily: "'Super Larky', cursive", // Custom Font für Alert
+                            "& .MuiAlert-message": {
+                                fontFamily: "'Super Larky', cursive",
+                            }
+                        }}
+                    >
                         Verbindung zum Server unterbrochen. Versuche neu zu verbinden...
                     </Alert>
                 )}
 
                 {/* Error Display */}
                 {error && (
-                    <Alert severity="error" onClose={() => setError(null)} sx={{ width: "100%" }}>
+                    <Alert
+                        severity="error"
+                        onClose={() => setError(null)}
+                        sx={{
+                            width: "100%",
+                            fontFamily: "'Super Larky', cursive", // Custom Font für Alert
+                            "& .MuiAlert-message": {
+                                fontFamily: "'Super Larky', cursive",
+                            }
+                        }}
+                    >
                         {error}
                     </Alert>
                 )}
@@ -180,6 +207,9 @@ function JoinRandom() {
                                         borderColor: "#AA6DA3",
                                     },
                                 },
+                                "& .MuiFormHelperText-root": { // Custom Font für Helper Text
+                                    fontFamily: "'Super Larky', cursive",
+                                }
                             }}
                             InputLabelProps={{
                                 sx: {
@@ -250,6 +280,7 @@ function JoinRandom() {
                                 variant="body1"
                                 align="center"
                                 sx={{
+                                    fontFamily: "'Super Larky', cursive", // Custom Font für Info-Text
                                     color: "#666",
                                     fontSize: "1rem",
                                     maxWidth: "300px"
