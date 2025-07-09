@@ -46,16 +46,14 @@ app.get('/api/games/:gameId/status', async (req, res) => {
                 source: "local" // Debug-Info
             };
 
-            // Debug-Log mit mehr Details
-            if (Math.random() < 0.05) { // 5% der Requests loggen für Debug
-                console.log(`📤 Status von lokal für ${gameId}:`, {
-                    phase: status.phase,
-                    round: status.round,
-                    submissionsCount: status.submissions.length,
-                    submittedPlayersCount: status.submittedPlayers.length,
-                    submissions: status.submissions
-                });
-            }
+            // Debug-Log mit mehr Details (IMMER loggen für Debug)
+            console.log(`📤 Status von lokal für ${gameId}:`, {
+                phase: status.phase,
+                round: status.round,
+                submissionsCount: status.submissions.length,
+                submittedPlayersCount: status.submittedPlayers.length,
+                submissions: status.submissions
+            });
 
             res.json(status);
             return;

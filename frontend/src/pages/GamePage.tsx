@@ -1,4 +1,4 @@
-// GamePage.tsx - Saubere Version mit Echtzeit-Submissions Polling
+// GamePage.tsx - Komplette Version mit einfachem Polling
 
 import React, { useEffect, useState, useRef } from "react";
 import { Typography, Container, Box, TextField, Button, CircularProgress, Card, CardContent, LinearProgress, Chip, Alert } from "@mui/material";
@@ -107,11 +107,11 @@ const GamePage = () => {
         };
     }, [state?.gameId, state?.name, navigate]);
 
-    // VERBESSERTES Polling für Echtzeit-Updates
+    // EINFACHES Polling für alle Updates
     useEffect(() => {
         if (!state?.gameId || !gameState) return;
 
-        console.log("🔄 Starte erweiterte Polling für Live-Updates");
+        console.log("🔄 Starte einfaches Polling für alle Updates");
 
         const pollInterval = setInterval(async () => {
             try {
@@ -119,7 +119,14 @@ const GamePage = () => {
                 if (response.ok) {
                     const serverState = await response.json();
 
-                    // Prüfe Phasen-/Rundenwechsel (wie vorher)
+                    console.log("📥 Polling Update erhalten:", {
+                        phase: serverState.phase,
+                        round: serverState.round,
+                        submissionsCount: serverState.submissions?.length || 0,
+                        submissions: serverState.submissions
+                    });
+
+                    // Prüfe Phasen-/Rundenwechsel (komplett neu laden)
                     if (gameState.phase !== serverState.phase) {
                         console.log(`🔄 PHASENWECHSEL: ${gameState.phase} → ${serverState.phase}`);
                         window.location.reload();
@@ -138,51 +145,31 @@ const GamePage = () => {
                         return;
                     }
 
-                    // NEU: Echtzeit-Updates für Submissions und submittedPlayers
-                    const submissionsChanged = JSON.stringify(gameState.submissions || []) !== JSON.stringify(serverState.submissions || []);
-                    const submittedPlayersChanged = JSON.stringify(gameState.submittedPlayers || []) !== JSON.stringify(serverState.submittedPlayers || []);
-                    const scoresChanged = JSON.stringify(gameState.scores || {}) !== JSON.stringify(serverState.scores || {});
+                    // EINFACH: Aktualisiere ALLE Daten bei jeder Abfrage
+                    setGameState(prevState => ({
+                        ...prevState!,
+                        submissions: serverState.submissions || [],
+                        submittedPlayers: serverState.submittedPlayers || [],
+                        scores: serverState.scores || {},
+                        revealedLetters: serverState.revealedLetters || prevState!.revealedLetters,
+                        guessSubmitted: serverState.guessSubmitted || prevState!.guessSubmitted
+                    }));
 
-                    if (submissionsChanged || submittedPlayersChanged || scoresChanged) {
-                        console.log("📝 LIVE-UPDATE erkannt:");
-                        if (submissionsChanged) {
-                            console.log("   → Submissions:", gameState.submissions?.length || 0, "→", serverState.submissions?.length || 0);
-                            console.log("   → Neue Submissions:", serverState.submissions);
-                        }
-                        if (submittedPlayersChanged) {
-                            console.log("   → SubmittedPlayers:", gameState.submittedPlayers?.length || 0, "→", serverState.submittedPlayers?.length || 0);
-                        }
-                        if (scoresChanged) {
-                            console.log("   → Scores aktualisiert");
-                        }
-
-                        // State direkt aktualisieren (ohne Reload)
-                        setGameState(prevState => ({
-                            ...prevState!,
-                            submissions: serverState.submissions || [],
-                            submittedPlayers: serverState.submittedPlayers || [],
-                            scores: serverState.scores || {},
-                            // Auch andere potentielle Updates
-                            revealedLetters: serverState.revealedLetters || prevState!.revealedLetters,
-                            guessSubmitted: serverState.guessSubmitted || prevState!.guessSubmitted
-                        }));
-
-                        // hasSubmitted Status bei submittedPlayers-Änderung aktualisieren
-                        if (submittedPlayersChanged && gameState.phase === "SUBMITTING_PHASE" && gameState.playerRole !== "GUESSER") {
-                            setHasSubmitted(serverState.submittedPlayers?.includes(state.name) || false);
-                        }
+                    // hasSubmitted Status aktualisieren
+                    if (gameState.phase === "SUBMITTING_PHASE" && gameState.playerRole !== "GUESSER") {
+                        setHasSubmitted(serverState.submittedPlayers?.includes(state.name) || false);
                     }
                 }
             } catch (error) {
                 console.warn("⚠️ Polling-Fehler:", error.message);
             }
-        }, 1500); // Etwas langsameres Polling für weniger Server-Last
+        }, 1500); // Jede 1,5 Sekunden
 
         return () => {
-            console.log("🔄 Stoppe erweiterte Polling");
+            console.log("🔄 Stoppe einfaches Polling");
             clearInterval(pollInterval);
         };
-    }, [state?.gameId, state?.name, gameState?.phase, gameState?.round, gameState?.isFinished, gameState?.submissions, gameState?.submittedPlayers, gameState?.scores]);
+    }, [state?.gameId, state?.name, gameState?.phase, gameState?.round, gameState?.isFinished]);
 
     // Timer für Anzeige
     const startTimer = (phase: string, customDuration?: number) => {
@@ -321,6 +308,9 @@ const GamePage = () => {
         );
     }
 
+    // Submissions für Anzeige (einfach)
+    const displaySubmissions = gameState?.submissions || [];
+
     // Hauptinhalt
     return (
         <Container maxWidth="md" style={{ minHeight: "100vh", paddingTop: "20px" }}>
@@ -442,22 +432,22 @@ const GamePage = () => {
                                     </Typography>
                                 </Box>
 
-                                {/* VERBESSERTER Hinweise-Bereich - zeigt Live-Updates */}
+                                {/* Hinweise-Bereich für alle Runden ab Runde 2 */}
                                 {gameState.round > 1 && (
                                     <Box mb={3} p={2} sx={{ backgroundColor: "#f0f8ff", borderRadius: "8px", border: "2px solid #2196F3" }}>
                                         <Typography variant="h5" gutterBottom sx={{ color: "#1976d2", fontWeight: "bold" }}>
                                             💡 Hinweise von anderen Spielern:
                                         </Typography>
 
-                                        {gameState.submissions && gameState.submissions.length > 0 ? (
+                                        {displaySubmissions && displaySubmissions.length > 0 ? (
                                             <>
                                                 <Typography variant="body2" color="text.secondary" mb={2}>
                                                     Diese Wörter sollen dir helfen (oder verwirren) 😉
                                                 </Typography>
                                                 <Box display="flex" flexWrap="wrap" gap={2}>
-                                                    {gameState.submissions.map((word, index) => (
+                                                    {displaySubmissions.map((word, index) => (
                                                         <Chip
-                                                            key={`${word}-${index}`} // Besserer Key für Live-Updates
+                                                            key={`${word}-${index}`}
                                                             label={word}
                                                             sx={{
                                                                 fontSize: "1.2rem",
@@ -482,6 +472,34 @@ const GamePage = () => {
                                                 🤷‍♂️ Alle eingereichten Wörter waren doppelt und wurden entfernt!
                                             </Typography>
                                         )}
+                                    </Box>
+                                )}
+
+                                {/* AKTUELLE RUNDE: Zeige Submissions auch in Runde 1 während SUBMITTING_PHASE */}
+                                {gameState.phase === "SUBMITTING_PHASE" && displaySubmissions.length > 0 && (
+                                    <Box mb={3} p={2} sx={{ backgroundColor: "#f9f9f9", borderRadius: "8px", border: "2px solid #9E9E9E" }}>
+                                        <Typography variant="h6" gutterBottom sx={{ color: "#424242", fontWeight: "bold" }}>
+                                            📝 Aktuelle Eingaben (Runde {gameState.round}):
+                                        </Typography>
+                                        <Box display="flex" flexWrap="wrap" gap={2}>
+                                            {displaySubmissions.map((word, index) => (
+                                                <Chip
+                                                    key={`current-${word}-${index}`}
+                                                    label={word}
+                                                    sx={{
+                                                        fontSize: "1rem",
+                                                        padding: "6px 10px",
+                                                        height: "auto",
+                                                        backgroundColor: "#e0e0e0",
+                                                        color: "#424242",
+                                                        fontWeight: "bold"
+                                                    }}
+                                                />
+                                            ))}
+                                        </Box>
+                                        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
+                                            ⏳ Wörter werden nach Ende der Phase verarbeitet
+                                        </Typography>
                                     </Box>
                                 )}
 
@@ -598,16 +616,12 @@ const GamePage = () => {
                             </Typography>
                         )}
                         {/* Debug Info für Entwicklung */}
-                        {process.env.NODE_ENV === 'development' && (
-                            <>
-                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-                                    DEBUG - Submissions: {JSON.stringify(gameState.submissions)}
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                                    DEBUG - SubmittedPlayers: {JSON.stringify(gameState.submittedPlayers)}
-                                </Typography>
-                            </>
-                        )}
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                            DEBUG - Submissions: {JSON.stringify(displaySubmissions)}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                            DEBUG - SubmittedPlayers: {JSON.stringify(gameState.submittedPlayers)}
+                        </Typography>
                     </CardContent>
                 </Card>
             </Box>

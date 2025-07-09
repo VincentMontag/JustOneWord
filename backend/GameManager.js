@@ -122,11 +122,13 @@ function startGuessingPhase(gameId) {
     game.phase = "GUESSING_PHASE";
     game.guessSubmitted = false;
 
-    // Reset submissions für neue Runde
-    game.submissions = [];
-    game.submittedPlayers = new Set();
+    // ENTFERNT: Reset submissions für neue Runde - submissions bleiben bestehen!
+    // game.submissions = []; // ← Das war das Problem!
+    game.submittedPlayers = new Set(); // Nur submitted players clearen
 
-    // Sync zu Firebase
+    console.log(`[${gameId}] 🔧 TEST: Submissions NICHT gecleart - aktuelle submissions:`, game.submissions);
+
+    // Sync zu Firebase (mit bestehenden submissions)
     syncSubmissionsToFirebase(gameId);
 
     // Timer starten
@@ -191,10 +193,11 @@ export async function submitGuess(gameId, guess) {
         console.log(`[${gameId}] Falsches Wort geraten: "${guess}". SUBMITTING_PHASE startet SOFORT.`);
 
         game.phase = "SUBMITTING_PHASE";
-        game.submissions = [];
-        game.submittedPlayers = new Set();
+        // ENTFERNT: game.submissions = []; // ← Submissions NICHT clearen!
+        game.submittedPlayers = new Set(); // Nur submitted players clearen
 
         console.log(`[${gameId}] SUBMITTING_PHASE beginnt – Unterstützer & Saboteure senden Wörter`);
+        console.log(`[${gameId}] 🔧 TEST: Submissions bleiben bestehen:`, game.submissions);
 
         // Sync zu Firebase
         await syncSubmissionsToFirebase(gameId);
