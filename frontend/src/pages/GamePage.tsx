@@ -9,6 +9,7 @@ interface GameState {
     phase: "GUESSING_PHASE" | "SUBMITTING_PHASE" | "FINISH_PHASE";
     round: number;
     solutionWord: string;
+    showFullSolution?: boolean; // Neu: Zeigt an ob Extra-Feld angezeigt werden soll
     revealedLetters: number[];
     submissions: string[];
     isFinished: boolean;
@@ -69,6 +70,20 @@ const GamePage = () => {
         socket.on("game-state-update", (newGameState: GameState) => {
             console.log("🎮 Spielstand aktualisiert:", newGameState.phase, "Runde", newGameState.round);
             console.log("📝 Submissions erhalten:", newGameState.submissions);
+            console.log("🔍 SolutionWord erhalten:", newGameState.solutionWord);
+            console.log("🔍 RevealedLetters erhalten:", newGameState.revealedLetters);
+            console.log("🔍 PlayerRole:", newGameState.playerRole);
+
+            // TEST: Direkt hier die Striche berechnen
+            if (newGameState.solutionWord && newGameState.revealedLetters) {
+                const testMask = newGameState.solutionWord
+                    .split('')
+                    .map((letter, index) =>
+                        newGameState.revealedLetters.includes(index) ? letter.toUpperCase() : '_'
+                    )
+                    .join(' ');
+                console.log("🔍 Berechnete Striche:", testMask);
+            }
 
             setGameState(newGameState);
 
@@ -148,6 +163,7 @@ const GamePage = () => {
                     // EINFACH: Aktualisiere ALLE Daten bei jeder Abfrage
                     setGameState(prevState => ({
                         ...prevState!,
+                        solutionWord: serverState.solutionWord || prevState!.solutionWord, // WICHTIG: solutionWord auch updaten!
                         submissions: serverState.submissions || [],
                         submittedPlayers: serverState.submittedPlayers || [],
                         scores: serverState.scores || {},
@@ -241,15 +257,26 @@ const GamePage = () => {
 
     const getMaskedWord = (): string => {
         if (!gameState?.solutionWord || typeof gameState.solutionWord !== 'string') {
+            console.log("🔍 getMaskedWord: Kein solutionWord verfügbar:", gameState?.solutionWord);
             return "";
         }
 
-        return gameState.solutionWord
+        console.log("🔍 getMaskedWord Input:", {
+            solutionWord: gameState.solutionWord,
+            revealedLetters: gameState.revealedLetters
+        });
+
+        const result = gameState.solutionWord
             .split('')
-            .map((letter, index) =>
-                gameState.revealedLetters?.includes(index) ? letter.toUpperCase() : '_'
-            )
+            .map((letter, index) => {
+                const isRevealed = gameState.revealedLetters?.includes(index);
+                console.log(`🔍 Buchstabe ${index}: "${letter}" -> ${isRevealed ? 'AUFGEDECKT' : 'VERSTECKT'}`);
+                return isRevealed ? letter.toUpperCase() : '_';
+            })
             .join(' ');
+
+        console.log("🔍 getMaskedWord Result:", result);
+        return result;
     };
 
     const getRoleColor = (role: string) => {
@@ -430,6 +457,27 @@ const GamePage = () => {
                                     }}>
                                         {getMaskedWord()}
                                     </Typography>
+
+                                    {/* NEUES EXTRA-FELD: Lösungswort für Unterstützer/Saboteure */}
+                                    {(gameState.playerRole === "SUPPORTER" || gameState.playerRole === "SABOTEUR") && (
+                                        <Box mt={2} p={2} sx={{
+                                            backgroundColor: gameState.playerRole === "SUPPORTER" ? "#e8f5e8" : "#ffebee",
+                                            borderRadius: "8px",
+                                            border: gameState.playerRole === "SUPPORTER" ? "2px solid #4CAF50" : "2px solid #F44336",
+                                            display: "inline-block"
+                                        }}>
+                                            <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
+                                                {gameState.playerRole === "SUPPORTER" ? "🎯 Lösungswort (Hilf dem Ratenden!):" : "😈 Lösungswort (Verwirre den Ratenden!):"}
+                                            </Typography>
+                                            <Typography variant="h5" sx={{
+                                                fontFamily: "monospace",
+                                                fontWeight: "bold",
+                                                color: gameState.playerRole === "SUPPORTER" ? "#2e7d32" : "#c62828"
+                                            }}>
+                                                "{gameState.solutionWord || 'Lade...'}"
+                                            </Typography>
+                                        </Box>
+                                    )}
                                 </Box>
 
                                 {/* Hinweise-Bereich für alle Runden ab Runde 2 */}
@@ -615,13 +663,6 @@ const GamePage = () => {
                                 Abgegeben: {gameState.submittedPlayers.length} Spieler
                             </Typography>
                         )}
-                        {/* Debug Info für Entwicklung */}
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-                            DEBUG - Submissions: {JSON.stringify(displaySubmissions)}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                            DEBUG - SubmittedPlayers: {JSON.stringify(gameState.submittedPlayers)}
-                        </Typography>
                     </CardContent>
                 </Card>
             </Box>

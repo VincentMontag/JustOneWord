@@ -1,4 +1,4 @@
-// GameManager.js - Erweiterte Version mit Firebase-Integration
+// GameManager.js - Mit intelligenter Punktevergabe
 
 import fs from 'fs/promises';
 import path from 'path';
@@ -10,6 +10,17 @@ export const games = {}; // gameId => game state
 
 const GUESSING_TIME = 60000;   // 1 Minute
 const SUBMITTING_TIME = 120000; // 2 Minuten
+
+// PUNKTESYSTEM KONSTANTEN
+const SCORING = {
+    SUPPORTER_START_POINTS: 500,
+    GUESSER_START_POINTS: 500,
+    SABOTEUR_START_POINTS: 0,
+    SUPPORTER_PENALTY_PER_ROUND: 100,  // -100 pro falschem Guess
+    SABOTEUR_BONUS_PER_ROUND: 100,     // +100 pro falschem Guess
+    CORRECT_GUESS_BONUS: 200,          // Bonus für Gewinner-Team
+    SABOTEUR_ROUND_BONUS: 50           // Saboteure bekommen auch pro Runde etwas
+};
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -68,6 +79,112 @@ async function syncSubmissionsToFirebase(gameId) {
     }
 }
 
+// NEUE FUNKTION: Intelligente Punktevergabe
+async function updateScoresBasedOnRoles(gameId, scenario) {
+    try {
+        const game = games[gameId];
+        if (!game) return;
+
+        // Hole Rollen aus Firebase
+        const gameDoc = await getDoc(doc(db, "games", gameId));
+        if (!gameDoc.exists()) {
+            console.error(`[${gameId}] ❌ Kann Rollen nicht aus Firebase laden`);
+            return;
+        }
+
+        const gameData = gameDoc.data();
+        const rolesMap = gameData.rolesMap || {};
+
+        console.log(`[${gameId}] 🎯 Punkteberechnung für Szenario: ${scenario}, Runde: ${game.round}`);
+
+        Object.keys(game.scores).forEach(playerName => {
+            const playerRole = rolesMap[playerName]?.role;
+            const oldScore = game.scores[playerName];
+            let newScore = oldScore;
+
+            switch (scenario) {
+                case 'WRONG_GUESS':
+                    if (playerRole === 'SUPPORTER' || playerRole === 'GUESSER') {
+                        // Unterstützer und Guesser verlieren Punkte bei falschen Guesses
+                        newScore = Math.max(0, oldScore - SCORING.SUPPORTER_PENALTY_PER_ROUND);
+                    } else if (playerRole === 'SABOTEUR') {
+                        // Saboteure gewinnen Punkte bei falschen Guesses
+                        newScore = oldScore + SCORING.SABOTEUR_BONUS_PER_ROUND;
+                    }
+                    break;
+
+                case 'CORRECT_GUESS':
+                    if (playerRole === 'SUPPORTER' || playerRole === 'GUESSER') {
+                        // Gewinner-Team bekommt Bonus (zusätzlich zu bestehenden Punkten)
+                        newScore = oldScore + SCORING.CORRECT_GUESS_BONUS;
+                    }
+                    // Saboteure bekommen nichts extra bei korrektem Guess
+                    break;
+
+                case 'ROUND_END':
+                    // Saboteure bekommen kleine Belohnung fürs Überleben der Runde
+                    if (playerRole === 'SABOTEUR') {
+                        newScore = oldScore + SCORING.SABOTEUR_ROUND_BONUS;
+                    }
+                    break;
+            }
+
+            game.scores[playerName] = newScore;
+
+            console.log(`[${gameId}] 💰 ${playerName} (${playerRole}): ${oldScore} → ${newScore} (${scenario})`);
+        });
+
+        // Sync zu Firebase
+        await syncSubmissionsToFirebase(gameId);
+
+    } catch (error) {
+        console.error(`[${gameId}] ❌ Fehler bei Punkteberechnung:`, error);
+    }
+}
+
+// NEUE FUNKTION: Initialisiere Startpunkte basierend auf Rollen
+async function initializeScoresBasedOnRoles(gameId) {
+    try {
+        const game = games[gameId];
+        if (!game) return;
+
+        // Hole Rollen aus Firebase
+        const gameDoc = await getDoc(doc(db, "games", gameId));
+        if (!gameDoc.exists()) {
+            console.error(`[${gameId}] ❌ Kann Rollen nicht aus Firebase laden`);
+            return;
+        }
+
+        const gameData = gameDoc.data();
+        const rolesMap = gameData.rolesMap || {};
+
+        console.log(`[${gameId}] 🎯 Initialisiere Startpunkte basierend auf Rollen`);
+
+        Object.keys(rolesMap).forEach(playerName => {
+            const playerRole = rolesMap[playerName]?.role;
+            let startPoints = 0;
+
+            switch (playerRole) {
+                case 'SUPPORTER':
+                    startPoints = SCORING.SUPPORTER_START_POINTS;
+                    break;
+                case 'GUESSER':
+                    startPoints = SCORING.GUESSER_START_POINTS;
+                    break;
+                case 'SABOTEUR':
+                    startPoints = SCORING.SABOTEUR_START_POINTS;
+                    break;
+            }
+
+            game.scores[playerName] = startPoints;
+            console.log(`[${gameId}] 🏁 ${playerName} (${playerRole}): Start mit ${startPoints} Punkten`);
+        });
+
+    } catch (error) {
+        console.error(`[${gameId}] ❌ Fehler bei Score-Initialisierung:`, error);
+    }
+}
+
 export async function startGame(gameId) {
     const game = games[gameId];
     if (!game) {
@@ -94,6 +211,9 @@ export async function startGame(gameId) {
     game.guessSubmitted = false;
     game.submissions = [];
     game.submittedPlayers = new Set();
+
+    // NEUE: Initialisiere rollenbasierte Startpunkte
+    await initializeScoresBasedOnRoles(gameId);
 
     // Initial sync zu Firebase
     await syncSubmissionsToFirebase(gameId);
@@ -122,11 +242,10 @@ function startGuessingPhase(gameId) {
     game.phase = "GUESSING_PHASE";
     game.guessSubmitted = false;
 
-    // ENTFERNT: Reset submissions für neue Runde - submissions bleiben bestehen!
-    // game.submissions = []; // ← Das war das Problem!
-    game.submittedPlayers = new Set(); // Nur submitted players clearen
+    // Submissions bleiben bestehen, nur submitted players clearen
+    game.submittedPlayers = new Set();
 
-    console.log(`[${gameId}] 🔧 TEST: Submissions NICHT gecleart - aktuelle submissions:`, game.submissions);
+    console.log(`[${gameId}] 🔧 Submissions bleiben bestehen - aktuelle submissions:`, game.submissions);
 
     // Sync zu Firebase (mit bestehenden submissions)
     syncSubmissionsToFirebase(gameId);
@@ -138,10 +257,10 @@ function startGuessingPhase(gameId) {
             console.log(`[${gameId}] ⏰ GUESSING_PHASE Zeit abgelaufen! Wechsle zu SUBMITTING_PHASE`);
 
             game.phase = "SUBMITTING_PHASE";
-            game.submissions = [];
             game.submittedPlayers = new Set();
 
             console.log(`[${gameId}] SUBMITTING_PHASE beginnt durch Zeitablauf`);
+            console.log(`[${gameId}] 🔧 Submissions bleiben bestehen:`, game.submissions);
 
             // Sync zu Firebase
             await syncSubmissionsToFirebase(gameId);
@@ -175,12 +294,11 @@ export async function submitGuess(gameId, guess) {
     console.log(`[${gameId}] Vergleiche "${normalized}" mit "${game.solutionWord.toLowerCase()}"`);
 
     if (normalized === game.solutionWord.toLowerCase()) {
-        console.log(`[${gameId}] Ratender hat das Wort korrekt erraten: "${guess}"`);
-        console.log(`[${gameId}] Spiel beendet. Unterstützer + Ratender erhalten 300 Punkte.`);
+        console.log(`[${gameId}] 🎉 Ratender hat das Wort korrekt erraten: "${guess}"`);
+        console.log(`[${gameId}] Spiel beendet. Unterstützer + Ratender erhalten Bonus-Punkte!`);
 
-        Object.keys(game.scores).forEach(playerName => {
-            game.scores[playerName] += 300;
-        });
+        // NEUE PUNKTEVERGABE: Korrekte Antwort
+        await updateScoresBasedOnRoles(gameId, 'CORRECT_GUESS');
 
         game.phase = "FINISH_PHASE";
         game.isFinished = true;
@@ -190,14 +308,16 @@ export async function submitGuess(gameId, guess) {
 
         return "correct";
     } else {
-        console.log(`[${gameId}] Falsches Wort geraten: "${guess}". SUBMITTING_PHASE startet SOFORT.`);
+        console.log(`[${gameId}] ❌ Falsches Wort geraten: "${guess}". Punkte werden angepasst.`);
+
+        // NEUE PUNKTEVERGABE: Falsche Antwort
+        await updateScoresBasedOnRoles(gameId, 'WRONG_GUESS');
 
         game.phase = "SUBMITTING_PHASE";
-        // ENTFERNT: game.submissions = []; // ← Submissions NICHT clearen!
-        game.submittedPlayers = new Set(); // Nur submitted players clearen
+        game.submittedPlayers = new Set();
 
         console.log(`[${gameId}] SUBMITTING_PHASE beginnt – Unterstützer & Saboteure senden Wörter`);
-        console.log(`[${gameId}] 🔧 TEST: Submissions bleiben bestehen:`, game.submissions);
+        console.log(`[${gameId}] 🔧 Submissions bleiben bestehen:`, game.submissions);
 
         // Sync zu Firebase
         await syncSubmissionsToFirebase(gameId);
@@ -260,13 +380,13 @@ async function processSubmissions(gameId) {
     // Sync zu Firebase NACH dem Filtering
     await syncSubmissionsToFirebase(gameId);
 
-    // Saboteure erhalten 50 Punkte (hier müsstest du die Rollen prüfen)
-    Object.keys(game.scores).forEach(playerName => {
-        // Hier würdest du prüfen: if (playerRole === 'SABOTEUR')
-        // game.scores[playerName] += 50;
-    });
+    // NEUE PUNKTEVERGABE: Runde überlebt
+    await updateScoresBasedOnRoles(gameId, 'ROUND_END');
 
-    console.log(`[${gameId}] Saboteure erhalten 50 Punkte`);
+    console.log(`[${gameId}] 🎯 Aktuelle Punktestände nach Runde ${game.round}:`);
+    Object.entries(game.scores).forEach(([player, score]) => {
+        console.log(`[${gameId}]   ${player}: ${score} Punkte`);
+    });
 
     // Einen zufälligen Buchstaben aufdecken
     const unrevealed = game.solutionWord
@@ -275,12 +395,10 @@ async function processSubmissions(gameId) {
         .filter(i => !game.revealedLetters.has(i));
 
     if (unrevealed.length === 0) {
-        console.log(`[${gameId}] Alle Buchstaben sind aufgedeckt! Saboteure erhalten 300 Punkte.`);
+        console.log(`[${gameId}] 🏆 Alle Buchstaben sind aufgedeckt! Saboteure haben gewonnen!`);
 
-        Object.keys(game.scores).forEach(playerName => {
-            // Hier würdest du prüfen: if (playerRole === 'SABOTEUR')
-            // game.scores[playerName] += 300;
-        });
+        // Zusätzliche Bonus-Punkte für Saboteure bei komplettem Sieg
+        await updateScoresBasedOnRoles(gameId, 'CORRECT_GUESS'); // Saboteure bekommen "Sieg"-Bonus
 
         game.phase = "FINISH_PHASE";
         game.isFinished = true;
