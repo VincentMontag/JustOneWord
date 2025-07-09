@@ -186,8 +186,7 @@ app.get('/api/games/:gameId/debug', (req, res) => {
 
 // React App für alle anderen Routes (Production only) - GANZ AM ENDE
 if (process.env.NODE_ENV === 'production') {
-    app.get('/*', (req, res) => {
-        // Don't serve React app for API routes
+    app.get('/{*catchall}', (req, res) => {
         if (req.path.startsWith('/api/')) {
             return res.status(404).json({ error: 'API route not found' });
         }
