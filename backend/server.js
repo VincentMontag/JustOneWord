@@ -18,8 +18,8 @@ const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
         origin: process.env.NODE_ENV === 'production'
-            ? true  // Allows all origins in production
-            : 'http://localhost:5173', // Die URL des Frontends für Development
+            ? ["https://justoneword.onrender.com"] // Ihre echte Domain hier
+            : 'http://localhost:5173',
         methods: ['GET', 'POST'],
     },
 });

@@ -3,7 +3,7 @@
 import { io } from 'socket.io-client';
 
 // Socket-Instanz erstellen
-const socket = io('http://localhost:5000', {
+const socket = io(process.env.NODE_ENV === 'production' ? undefined : 'http://localhost:5000', {
     autoConnect: true,
     reconnection: true,
     reconnectionDelay: 1000,

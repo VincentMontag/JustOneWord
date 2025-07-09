@@ -50,7 +50,7 @@ const GamePage = () => {
     useEffect(() => {
         if (!state?.gameId || !state?.name) return;
 
-        socketRef.current = io("http://localhost:5000");
+        socketRef.current = io(process.env.NODE_ENV === 'production' ? undefined : "http://localhost:5000");
         const socket = socketRef.current;
 
         socket.on("connect", () => {
@@ -132,7 +132,9 @@ const GamePage = () => {
 
         const pollInterval = setInterval(async () => {
             try {
-                const response = await fetch(`http://localhost:5000/api/games/${state.gameId}/status`);
+                const response = await fetch(process.env.NODE_ENV === 'production'
+                    ? `/api/games/${state.gameId}/status`
+                    : `http://localhost:5000/api/games/${state.gameId}/status`);
                 if (response.ok) {
                     const serverState = await response.json();
 
