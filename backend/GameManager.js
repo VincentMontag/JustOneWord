@@ -24,24 +24,18 @@ const SCORING = {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const dictionaryPath = path.resolve(__dirname, '../backend/data/dictionary.txt');
+const dictionaryPath = path.resolve(__dirname, '/data/dictionary.txt');
 
 export async function loadRandomWord() {
     try {
         const content = await fs.readFile(dictionaryPath, 'utf-8');
         const words = content.split(/\r?\n/).filter(Boolean);
 
-        if (words.length === 0) {
-            console.error("Keine Wörter im Dictionary gefunden!");
-            return "FALLBACK"; // Notfall-Wort
-        }
-
         const randomIndex = Math.floor(Math.random() * words.length);
         const selectedWord = words[randomIndex].trim();
 
         console.log(`Wort ausgewählt: "${selectedWord}" (Typ: ${typeof selectedWord})`);
 
-        // Sicherstellen dass es ein String ist
         return String(selectedWord);
     } catch (error) {
         console.error("Fehler beim Laden des Dictionary:", error);
