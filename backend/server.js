@@ -32,6 +32,9 @@ if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, 'build')));
 }
 
+// Socket.IO Handler ZUERST
+socketHandlers(io);
+
 // ERWEITETER Status-Endpoint für Polling (mit Submissions und allen Details)
 app.get('/api/games/:gameId/status', async (req, res) => {
     try {
@@ -181,9 +184,9 @@ app.get('/api/games/:gameId/debug', (req, res) => {
     }
 });
 
-// React App für alle anderen Routes (Production only)
+// React App für alle anderen Routes (Production only) - GANZ AM ENDE
 if (process.env.NODE_ENV === 'production') {
-    app.get('*', (req, res) => {
+    app.get('/*', (req, res) => {
         // Don't serve React app for API routes
         if (req.path.startsWith('/api/')) {
             return res.status(404).json({ error: 'API route not found' });
@@ -192,11 +195,10 @@ if (process.env.NODE_ENV === 'production') {
     });
 }
 
-socketHandlers(io);
-
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
     console.log(`🚀 Server läuft auf Port ${PORT}`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 
     if (process.env.NODE_ENV === 'production') {
         console.log(`🎮 React App wird auch von diesem Server gehostet!`);
