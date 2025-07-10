@@ -391,7 +391,6 @@ const GamePage = () => {
                                     }}
                                 />
                             </Box>
-                            ollen dir helfen (oder verwirren)
                             <Box display="flex" justifyContent="space-between" alignItems="center">
                                 <Typography
                                     variant="body2"

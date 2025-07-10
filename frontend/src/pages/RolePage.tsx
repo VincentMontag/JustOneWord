@@ -219,7 +219,7 @@ const RolePage = () => {
                             fontSize: "2rem",
                         }}
                     >
-                        🎮 Spiel startet!
+                        Spiel startet!
                     </Typography>
 
                     <Typography
@@ -314,8 +314,8 @@ const RolePage = () => {
                         }}
                     >
                         {readyPlayers.length === totalPlayers ?
-                            "🎯 Alle Spieler sind bereit!" :
-                            "⏳ Warte auf andere Spieler..."
+                            "Alle Spieler sind bereit!" :
+                            "Warte auf andere Spieler..."
                         }
                     </Typography>
 
