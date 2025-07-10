@@ -38,8 +38,6 @@ socketHandlers(io);
 app.get('/api/games/:gameId/status', async (req, res) => {
     try {
         const { gameId } = req.params;
-        console.log(`Status-Abfrage für Spiel ${gameId}`);
-
         const localGame = games[gameId];
 
         if (localGame) {
@@ -57,14 +55,6 @@ app.get('/api/games/:gameId/status', async (req, res) => {
                 lastUpdated: Date.now(),
                 source: "local"
             };
-
-            console.log(`Status von lokal für ${gameId}:`, {
-                phase: status.phase,
-                round: status.round,
-                submissionsCount: status.submissions.length,
-                submittedPlayersCount: status.submittedPlayers.length,
-                submissions: status.submissions
-            });
 
             res.json(status);
             return;
