@@ -1,5 +1,3 @@
-// gameLogic.js - Angepasst für Socket.IO Integration
-
 import { setDoc, doc } from "firebase/firestore";
 import { db } from './firebase.js';
 import { v4 as uuidv4 } from "uuid";
@@ -23,7 +21,6 @@ export async function assignRoles(queue, io) {
     const gameId = uuidv4();
     const rolesMap = {};
 
-    // Rollen zuweisen mit korrekten englischen Namen (für Backend-Kompatibilität)
     for (const player of queue) {
         let role = "";
 
@@ -52,9 +49,7 @@ export async function assignRoles(queue, io) {
     try {
         // In Firebase speichern
         await setDoc(doc(db, "games", gameId), gameDoc);
-        console.log(`✅ Spiel ${gameId} in Firebase gespeichert`);
 
-        // Im Server-Cache initialisieren (aber noch nicht starten)
         games[gameId] = {
             solutionWord: null,
             round: 0,
@@ -73,15 +68,11 @@ export async function assignRoles(queue, io) {
             games[gameId].scores[player.name] = 0;
         });
 
-        console.log(`🎮 Spiel ${gameId} im Server-Cache initialisiert`);
-
-        // Sofort Events an alle Spieler senden (kein Delay nötig!)
         for (const player of queue) {
             const role = rolesMap[player.name].role;
             const playerSocket = io.sockets.sockets.get(player.id);
 
             if (playerSocket) {
-                console.log(`📤 Sende Rolle "${role}" an Spieler ${player.name}`);
                 playerSocket.emit("role-assigned", {
                     role,
                     gameId,
@@ -92,25 +83,20 @@ export async function assignRoles(queue, io) {
             }
         }
 
-        // Status-Update in Firebase - Spiel wartet auf Spieler-Verbindungen
         await setDoc(doc(db, "games", gameId), {
             ...gameDoc,
             status: "roles_assigned"
         });
 
-        console.log(`🎯 Rollen für Spiel ${gameId} zugewiesen. Warte auf Spieler-Verbindungen...`);
-
         return gameId;
 
     } catch (error) {
-        console.error("❌ Fehler beim Erstellen des Spiels:", error);
+        console.error("Fehler beim Erstellen des Spiels:", error);
 
-        // Cleanup bei Fehler
         if (games[gameId]) {
             delete games[gameId];
         }
 
-        // Fehler an alle Spieler senden
         for (const player of queue) {
             const playerSocket = io.sockets.sockets.get(player.id);
             if (playerSocket) {

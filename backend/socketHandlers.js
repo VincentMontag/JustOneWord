@@ -1,14 +1,12 @@
-// socketHandlers.js - Komplette Socket.IO Handler mit Firebase Sync
-
 import { assignRoles } from "./gameLogic.js";
 import { games, startGame, submitGuess, submitWord } from "./GameManager.js";
-import { db } from "./firebase.js"; // Deine Firebase-Konfiguration
+import { db } from "./firebase.js";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
 
 export const socketHandlers = (io) => {
     let queue = [];
-    const playerSockets = new Map(); // gameId -> { playerName: socketId }
-    const readyPlayers = new Map(); // gameId -> Set of ready playerNames
+    const playerSockets = new Map();
+    const readyPlayers = new Map();
 
     io.on("connection", (socket) => {
         console.log("Ein Spieler hat sich verbunden:", socket.id);
@@ -24,14 +22,11 @@ export const socketHandlers = (io) => {
             }
 
             queue.push({ id: socket.id, name });
-            console.log(`${name} der Lobby beigetreten (${queue.length}/3)`);
-
             io.emit("queue-update", queue.length);
 
             if (queue.length === 3) {
                 try {
                     const gameId = await assignRoles(queue, io);
-                    console.log(`🎮 Spiel ${gameId} erstellt, Rollen zugewiesen`);
                     queue.length = 0;
                 } catch (error) {
                     console.error("Fehler bei Rollenzuteilung:", error);
@@ -63,8 +58,6 @@ export const socketHandlers = (io) => {
                 }
                 playerSockets.get(gameId).set(playerName, socket.id);
 
-                console.log(`${playerName} ist Socket-Room ${gameId} beigetreten`);
-
                 if (!readyPlayers.has(gameId)) {
                     readyPlayers.set(gameId, new Set());
                 }
@@ -80,8 +73,6 @@ export const socketHandlers = (io) => {
         // Player Ready Event
         socket.on("player-ready", async (data) => {
             const { gameId, playerName } = data;
-
-            console.log(`🎯 Player Ready Event erhalten:`, { gameId, playerName });
 
             try {
                 const gameDoc = await getDoc(doc(db, "games", gameId));
@@ -100,25 +91,15 @@ export const socketHandlers = (io) => {
 
                 if (!readyPlayers.has(gameId)) {
                     readyPlayers.set(gameId, new Set());
-                    console.log(`🔧 Ready Players Set für ${gameId} initialisiert`);
                 }
 
                 const currentReadySet = readyPlayers.get(gameId);
                 currentReadySet.add(playerName);
-
-                console.log(`✅ ${playerName} ist bereit für Spiel ${gameId}`);
-                console.log(`📋 Aktuell bereite Spieler:`, Array.from(currentReadySet));
-
                 sendReadyStatusUpdate(gameId, gameData, io);
-
                 const totalPlayers = Object.keys(gameData.rolesMap).length;
                 const readyCount = currentReadySet.size;
 
-                console.log(`🔢 Ready Count: ${readyCount}/${totalPlayers}`);
-
                 if (readyCount === totalPlayers) {
-                    console.log(`🚀 Alle Spieler bereit für Spiel ${gameId}. Starte Spiel!`);
-
                     setTimeout(async () => {
                         await initializeAndStartGame(gameId, gameData, io);
                     }, 2000);
@@ -152,8 +133,6 @@ export const socketHandlers = (io) => {
                     socket.emit("game-error", "Spieler nicht in diesem Spiel");
                     return;
                 }
-
-                console.log(`${playerName} ist dem gestarteten Spiel ${gameId} beigetreten`);
 
                 const playerGameState = getGameStateForPlayer(gameId, playerName, gameData);
                 socket.emit("game-state-update", playerGameState);
@@ -189,11 +168,7 @@ export const socketHandlers = (io) => {
                     return;
                 }
 
-                console.log(`${playerName} rät: "${guess}"`);
-
                 const result = await submitGuess(gameId, guess);
-
-                console.log(`[${gameId}] ✅ Guess verarbeitet (${result}) - Polling wird Phasenwechsel erkennen`);
 
             } catch (error) {
                 console.error("Fehler beim Guess:", error);
@@ -226,12 +201,8 @@ export const socketHandlers = (io) => {
                     return;
                 }
 
-                console.log(`${playerName} reicht Wort ein: "${word}"`);
-
-                // Wort einreichen - wird automatisch zu Firebase synchronisiert
+                // Wort einreichen, automatisch zu Firebase synchronisiert
                 await submitWord(gameId, playerName, word);
-
-                console.log(`[${gameId}] ✅ Wort eingereicht - Firebase automatisch aktualisiert`);
 
             } catch (error) {
                 console.error("Fehler beim Wort einreichen:", error);
@@ -245,7 +216,6 @@ export const socketHandlers = (io) => {
 
             const queuePlayer = queue.find((p) => p.id === socket.id);
             if (queuePlayer) {
-                console.log(`${queuePlayer.name} hat die Warteschlange verlassen.`);
                 queue = queue.filter((p) => p.id !== socket.id);
                 io.emit("queue-update", queue.length);
             }
@@ -253,7 +223,6 @@ export const socketHandlers = (io) => {
             for (const [gameId, players] of playerSockets.entries()) {
                 for (const [playerName, socketId] of players.entries()) {
                     if (socketId === socket.id) {
-                        console.log(`${playerName} hat Spiel ${gameId} verlassen`);
                         players.delete(playerName);
 
                         if (readyPlayers.has(gameId)) {
@@ -287,10 +256,7 @@ export const socketHandlers = (io) => {
                     submittedPlayers: new Set(),
                     expectedSubmitters: Object.keys(gameData.rolesMap).length - 1,
                     scores: {},
-                    guessSubmitted: false,
-                    onPhaseChange: async (gameId) => {
-                        console.log(`[${gameId}] ✅ Phase-Change durch Zeitablauf - Polling wird es erkennen`);
-                    }
+                    guessSubmitted: false
                 };
 
                 Object.keys(gameData.rolesMap).forEach(playerName => {
@@ -323,7 +289,6 @@ export const socketHandlers = (io) => {
             allReady: allReady
         };
 
-        console.log(`📊 Ready Status Update für ${gameId}:`, updateData);
         io.to(gameId).emit("ready-status-update", updateData);
 
         return updateData;
@@ -331,10 +296,6 @@ export const socketHandlers = (io) => {
 
     async function syncAndBroadcastGameState(gameId, gameData, io, forceRefresh = false) {
         try {
-            console.log(`[${gameId}] 🔄 Starte syncAndBroadcastGameState... (forceRefresh=${forceRefresh})`);
-
-            // Sync zu Firebase wird automatisch in GameManager gemacht
-            // await syncGameStateToFirebase(gameId); // Entfernt - passiert automatisch
 
             const players = playerSockets.get(gameId);
             if (!players) {
@@ -342,17 +303,13 @@ export const socketHandlers = (io) => {
                 return;
             }
 
-            console.log(`[${gameId}] 📤 Sende Game State an ${players.size} Spieler`);
-
             for (const [playerName, socketId] of players.entries()) {
                 const socket = io.sockets.sockets.get(socketId);
                 if (socket) {
                     if (forceRefresh) {
-                        console.log(`[${gameId}] 🔄 Sende Force-Refresh an ${playerName}`);
                         socket.emit("force-refresh", { reason: "Phasenwechsel" });
                     } else {
                         const playerGameState = getGameStateForPlayer(gameId, playerName, gameData);
-                        console.log(`[${gameId}] → Sende an ${playerName}: Phase=${playerGameState?.phase}, submissions=${playerGameState?.submissions?.length || 0}`);
                         socket.emit("game-state-update", playerGameState);
                     }
                 } else {
@@ -360,10 +317,8 @@ export const socketHandlers = (io) => {
                 }
             }
 
-            console.log(`[${gameId}] ✅ Game State Broadcast abgeschlossen`);
-
         } catch (error) {
-            console.error(`❌ Fehler beim Sync von Spiel ${gameId}:`, error);
+            console.error(`Fehler beim Sync von Spiel ${gameId}:`, error);
         }
     }
 
@@ -388,12 +343,6 @@ export const socketHandlers = (io) => {
             timeLeft = 0;
         }
 
-        console.log(`[${gameId}] 🔍 getGameStateForPlayer für ${playerName}:`);
-        console.log(`[${gameId}] 📝 submissions im game:`, game.submissions);
-        console.log(`[${gameId}] 📝 submissions Länge:`, game.submissions?.length || 0);
-
-        console.log(`[${gameId}] Game State für ${playerName}: Phase=${game.phase}, timeLeft=${timeLeft}, submissions=${game.submissions?.length || 0}`);
-
         return {
             phase: game.phase,
             round: game.round,
@@ -407,36 +356,5 @@ export const socketHandlers = (io) => {
             playerRole: playerRole,
             timeLeft: timeLeft
         };
-    }
-
-    // Diese Funktion ist jetzt redundant, da GameManager selbst zu Firebase synct
-    // Aber falls du sie separat brauchst:
-    async function syncGameStateToFirebase(gameId) {
-        try {
-            const game = games[gameId];
-            if (!game) return;
-
-            const gameState = {
-                phase: game.phase,
-                round: game.round,
-                solutionWord: game.solutionWord || "",
-                revealedLetters: Array.from(game.revealedLetters),
-                submissions: game.submissions || [],
-                isFinished: game.isFinished,
-                scores: game.scores || {},
-                submittedPlayers: Array.from(game.submittedPlayers),
-                guessSubmitted: game.guessSubmitted || false,
-                lastUpdated: Date.now()
-            };
-
-            await updateDoc(doc(db, "games", gameId), {
-                gameState: gameState
-            });
-
-            console.log(`[${gameId}] Spielstand zu Firebase synchronisiert`);
-
-        } catch (error) {
-            console.error(`[${gameId}] Fehler beim Synchronisieren zu Firebase:`, error);
-        }
     }
 };
