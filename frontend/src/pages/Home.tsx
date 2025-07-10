@@ -1,4 +1,3 @@
-// src/pages/Home.tsx
 import { Button, Typography, Container, Box } from "@mui/material";
 // @ts-ignore
 import { triangleBackground } from "../styles/triangleBackground.ts"
@@ -50,7 +49,7 @@ function Home() {
                         fontSize: "30px",
                         boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
                         "&:hover": {
-                            backgroundColor: "#8a5089", // dunklerer Ton
+                            backgroundColor: "#8a5089",
                         },
                     }}
                 >

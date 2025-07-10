@@ -6,7 +6,7 @@ import App from "./App";
 
 const lightTheme = createTheme({
     palette: {
-        mode: "light", // Light Mode aktivieren
+        mode: "light",
     },
 });
 

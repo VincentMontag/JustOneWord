@@ -1,5 +1,3 @@
-// JoinRandom.tsx - Angepasst für neue Socket.IO Integration
-
 import { useState, useEffect } from "react";
 import { Box, Button, TextField, Typography, Container, Alert, CircularProgress } from "@mui/material";
 import { starBackground } from "../styles/starBackground.ts";
@@ -31,7 +29,6 @@ function JoinRandom() {
 
         // Game event listeners
         const onQueueUpdate = (size: number) => {
-            console.log("Queue Update:", size);
             setQueueSize(size);
         };
 
@@ -40,7 +37,6 @@ function JoinRandom() {
             playerName: string,
             role: string
         }) => {
-            console.log("Rolle zugewiesen:", { gameId, playerName, role });
             navigate("/role", {
                 state: {
                     name: playerName,
@@ -91,7 +87,6 @@ function JoinRandom() {
         }
 
         if (name.trim().length >= 1 && name.trim().length <= 20) {
-            console.log(`Sende Name: ${name.trim()}`);
             setError(null);
             socket.emit("join-random", { name: name.trim(), id: socket.id });
             setSubmitted(true);
@@ -120,13 +115,13 @@ function JoinRandom() {
             style={{
                 ...starBackground,
                 minHeight: "100vh",
-                minWidth: "100vw", // Sorgt dafür, dass der Hintergrund die gesamte Breite abdeckt
+                minWidth: "100vw",
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
-                margin: 0, // Entfernt Standard-Margin
-                padding: 0, // Entfernt Standard-Padding
-                position: "fixed", // Fixiert den Container für vollständige Abdeckung
+                margin: 0,
+                padding: 0,
+                position: "fixed",
                 top: 0,
                 left: 0,
                 right: 0,
@@ -140,7 +135,7 @@ function JoinRandom() {
                         severity="warning"
                         sx={{
                             width: "100%",
-                            fontFamily: "'Super Larky', cursive", // Custom Font für Alert
+                            fontFamily: "'Super Larky', cursive",
                             "& .MuiAlert-message": {
                                 fontFamily: "'Super Larky', cursive",
                             }
@@ -157,7 +152,7 @@ function JoinRandom() {
                         onClose={() => setError(null)}
                         sx={{
                             width: "100%",
-                            fontFamily: "'Super Larky', cursive", // Custom Font für Alert
+                            fontFamily: "'Super Larky', cursive",
                             "& .MuiAlert-message": {
                                 fontFamily: "'Super Larky', cursive",
                             }
@@ -207,7 +202,7 @@ function JoinRandom() {
                                         borderColor: "#AA6DA3",
                                     },
                                 },
-                                "& .MuiFormHelperText-root": { // Custom Font für Helper Text
+                                "& .MuiFormHelperText-root": {
                                     fontFamily: "'Super Larky', cursive",
                                 }
                             }}
@@ -280,7 +275,7 @@ function JoinRandom() {
                                 variant="body1"
                                 align="center"
                                 sx={{
-                                    fontFamily: "'Super Larky', cursive", // Custom Font für Info-Text
+                                    fontFamily: "'Super Larky', cursive",
                                     color: "#666",
                                     fontSize: "1rem",
                                     maxWidth: "300px"

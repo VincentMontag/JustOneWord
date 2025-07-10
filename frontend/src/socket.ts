@@ -1,5 +1,3 @@
-// src/socket.ts - Socket.IO Client Konfiguration
-
 import { io } from 'socket.io-client';
 
 // Socket-Instanz erstellen
@@ -11,7 +9,6 @@ const socket = io(process.env.NODE_ENV === 'production' ? undefined : 'http://lo
     timeout: 20000,
 });
 
-// Debug-Events (optional, für Entwicklung)
 socket.on('connect', () => {
     console.log('🔗 Socket verbunden mit ID:', socket.id);
 });

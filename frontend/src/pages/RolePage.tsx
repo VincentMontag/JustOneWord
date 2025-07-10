@@ -1,5 +1,3 @@
-// RolePage.tsx - Saubere Version mit "Bereit" Button System
-
 import { useEffect, useState } from "react";
 import { Typography, Container, Box, CircularProgress, Button } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -22,26 +20,17 @@ const RolePage = () => {
 
     // Initialisierung und Socket Setup
     useEffect(() => {
-        // Validiere State-Daten
         if (!state?.role || !state?.gameId || !state?.name) {
             setError("Keine Spieldaten gefunden. Bitte starte ein neues Spiel.");
             setLoading(false);
             return;
         }
 
-        // Setze Rolle und beende Loading
         setRole(state.role);
         setLoading(false);
 
-        console.log("RolePage geladen:", {
-            role: state.role,
-            gameId: state.gameId,
-            name: state.name
-        });
-
         // Socket Event Handlers
         const handleGameStateUpdate = (gameState: any) => {
-            console.log("Game State Update erhalten:", gameState);
             if (gameState?.phase) {
                 setGameStarted(true);
             }
@@ -49,14 +38,12 @@ const RolePage = () => {
 
         const handleGameError = (errorMessage: string) => {
             console.error("Spielfehler:", errorMessage);
-            // Ignoriere "noch nicht gestartet" Fehler (sind normal für RolePage)
             if (!errorMessage.includes("noch nicht gestartet")) {
                 setError(errorMessage);
             }
         };
 
         const handleReadyUpdate = (data: { readyPlayers: string[], totalPlayers: number, allReady: boolean }) => {
-            console.log("Ready Status Update:", data);
             setReadyPlayers(data.readyPlayers);
             setTotalPlayers(data.totalPlayers);
 
@@ -70,9 +57,8 @@ const RolePage = () => {
         socket.on("game-error", handleGameError);
         socket.on("ready-status-update", handleReadyUpdate);
 
-        // Socket-Room beitreten (NICHT das Spiel starten!)
+        // Socket-Room beitreten (NICHT das Spiel starten)
         const joinTimer = setTimeout(() => {
-            console.log("Trete Socket-Room bei:", { gameId: state.gameId, playerName: state.name });
             socket.emit("join-room", {
                 gameId: state.gameId,
                 playerName: state.name
@@ -116,21 +102,10 @@ const RolePage = () => {
     const handleReady = () => {
         if (isReady || !state?.gameId || !state?.name) return;
 
-        console.log("Spieler ist bereit");
         setIsReady(true);
         socket.emit("player-ready", {
             gameId: state.gameId,
             playerName: state.name
-        });
-    };
-
-    const handleStartGameManually = () => {
-        navigate("/game", {
-            state: {
-                gameId: state.gameId,
-                name: state.name,
-                role: state.role
-            }
         });
     };
 
@@ -256,23 +231,6 @@ const RolePage = () => {
                     </Typography>
 
                     <CircularProgress sx={{ color: "#3fc1c9" }} />
-
-                    <Button
-                        variant="contained"
-                        onClick={handleStartGameManually}
-                        size="large"
-                        sx={{
-                            mt: 2,
-                            fontFamily: "'Super Larky', cursive",
-                            fontSize: "1.2rem",
-                            backgroundColor: "#3fc1c9",
-                            "&:hover": {
-                                backgroundColor: "#33a1a8",
-                            },
-                        }}
-                    >
-                        Jetzt beitreten
-                    </Button>
                 </Box>
             </Container>
         );

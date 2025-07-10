@@ -1,5 +1,3 @@
-// GamePage.tsx - Komplette Version mit einfachem Polling
-
 // @ts-ignore
 import React, { useEffect, useState, useRef } from "react";
 import { Typography, Container, Box, TextField, Button, CircularProgress, Card, CardContent, LinearProgress, Chip, Alert } from "@mui/material";
@@ -11,7 +9,7 @@ interface GameState {
     phase: "GUESSING_PHASE" | "SUBMITTING_PHASE" | "FINISH_PHASE";
     round: number;
     solutionWord: string;
-    showFullSolution?: boolean; // Neu: Zeigt an ob Extra-Feld angezeigt werden soll
+    showFullSolution?: boolean;
     revealedLetters: number[];
     submissions: string[];
     isFinished: boolean;
@@ -70,13 +68,7 @@ const GamePage = () => {
         });
 
         socket.on("game-state-update", (newGameState: GameState) => {
-            console.log("🎮 Spielstand aktualisiert:", newGameState.phase, "Runde", newGameState.round);
-            console.log("📝 Submissions erhalten:", newGameState.submissions);
-            console.log("🔍 SolutionWord erhalten:", newGameState.solutionWord);
-            console.log("🔍 RevealedLetters erhalten:", newGameState.revealedLetters);
-            console.log("🔍 PlayerRole:", newGameState.playerRole);
 
-            // TEST: Direkt hier die Striche berechnen
             if (newGameState.solutionWord && newGameState.revealedLetters) {
                 const testMask = newGameState.solutionWord
                     .split('')
@@ -84,7 +76,7 @@ const GamePage = () => {
                         newGameState.revealedLetters.includes(index) ? letter.toUpperCase() : '_'
                     )
                     .join(' ');
-                console.log("🔍 Berechnete Striche:", testMask);
+                console.log(testMask);
             }
 
             setGameState(newGameState);
@@ -124,11 +116,9 @@ const GamePage = () => {
         };
     }, [state?.gameId, state?.name, navigate]);
 
-    // EINFACHES Polling für alle Updates
+    // Polling für alle Updates
     useEffect(() => {
         if (!state?.gameId || !gameState) return;
-
-        console.log("🔄 Starte einfaches Polling für alle Updates");
 
         const pollInterval = setInterval(async () => {
             try {
@@ -138,36 +128,24 @@ const GamePage = () => {
                 if (response.ok) {
                     const serverState = await response.json();
 
-                    console.log("📥 Polling Update erhalten:", {
-                        phase: serverState.phase,
-                        round: serverState.round,
-                        submissionsCount: serverState.submissions?.length || 0,
-                        submissions: serverState.submissions
-                    });
-
-                    // Prüfe Phasen-/Rundenwechsel (komplett neu laden)
                     if (gameState.phase !== serverState.phase) {
-                        console.log(`🔄 PHASENWECHSEL: ${gameState.phase} → ${serverState.phase}`);
                         window.location.reload();
                         return;
                     }
 
                     if (gameState.round !== serverState.round) {
-                        console.log(`🔄 RUNDENWECHSEL: ${gameState.round} → ${serverState.round}`);
                         window.location.reload();
                         return;
                     }
 
                     if (!gameState.isFinished && serverState.isFinished) {
-                        console.log("🔄 SPIELENDE erkannt");
                         window.location.reload();
                         return;
                     }
 
-                    // EINFACH: Aktualisiere ALLE Daten bei jeder Abfrage
                     setGameState(prevState => ({
                         ...prevState!,
-                        solutionWord: serverState.solutionWord || prevState!.solutionWord, // WICHTIG: solutionWord auch updaten!
+                        solutionWord: serverState.solutionWord || prevState!.solutionWord,
                         submissions: serverState.submissions || [],
                         submittedPlayers: serverState.submittedPlayers || [],
                         scores: serverState.scores || {},
@@ -187,7 +165,6 @@ const GamePage = () => {
         }, 1500); // Jede 1,5 Sekunden
 
         return () => {
-            console.log("🔄 Stoppe einfaches Polling");
             clearInterval(pollInterval);
         };
     }, [state?.gameId, state?.name, gameState?.phase, gameState?.round, gameState?.isFinished]);
@@ -225,7 +202,6 @@ const GamePage = () => {
         if (!gameState || !socketRef.current || !canSubmit()) return;
 
         if (gameState.phase === "GUESSING_PHASE" && gameState.playerRole === "GUESSER") {
-            console.log("📤 Sende Guess:", inputValue);
             socketRef.current.emit("submit-guess", {
                 gameId: state.gameId,
                 guess: inputValue,
@@ -233,7 +209,6 @@ const GamePage = () => {
             });
             setHasSubmitted(true);
         } else if (gameState.phase === "SUBMITTING_PHASE" && gameState.playerRole !== "GUESSER") {
-            console.log("📤 Sende Word:", inputValue);
             socketRef.current.emit("submit-word", {
                 gameId: state.gameId,
                 word: inputValue,
@@ -262,25 +237,18 @@ const GamePage = () => {
 
     const getMaskedWord = (): string => {
         if (!gameState?.solutionWord || typeof gameState.solutionWord !== 'string') {
-            console.log("🔍 getMaskedWord: Kein solutionWord verfügbar:", gameState?.solutionWord);
+            console.log(gameState?.solutionWord);
             return "";
         }
-
-        console.log("🔍 getMaskedWord Input:", {
-            solutionWord: gameState.solutionWord,
-            revealedLetters: gameState.revealedLetters
-        });
 
         const result = gameState.solutionWord
             .split('')
             .map((letter, index) => {
                 const isRevealed = gameState.revealedLetters?.includes(index);
-                console.log(`🔍 Buchstabe ${index}: "${letter}" -> ${isRevealed ? 'AUFGEDECKT' : 'VERSTECKT'}`);
                 return isRevealed ? letter.toUpperCase() : '_';
             })
             .join(' ');
 
-        console.log("🔍 getMaskedWord Result:", result);
         return result;
     };
 
@@ -378,10 +346,9 @@ const GamePage = () => {
         );
     }
 
-    // Submissions für Anzeige (einfach)
+    // Submissions für Anzeige
     const displaySubmissions = gameState?.submissions || [];
 
-    // Hauptinhalt
     return (
         <Box style={containerStyle}>
             <Container maxWidth="md" style={{ minHeight: "100vh", paddingTop: "20px", paddingBottom: "20px" }}>
@@ -424,7 +391,7 @@ const GamePage = () => {
                                     }}
                                 />
                             </Box>
-
+                            ollen dir helfen (oder verwirren)
                             <Box display="flex" justifyContent="space-between" alignItems="center">
                                 <Typography
                                     variant="body2"
@@ -601,7 +568,7 @@ const GamePage = () => {
                                                         mb={2}
                                                         sx={{ fontFamily: "'Super Larky', cursive" }}
                                                     >
-                                                        Diese Wörter sollen dir helfen (oder verwirren) 😉
+                                                        Diese Wörter sollen dir helfen (oder verwirren)
                                                     </Typography>
                                                     <Box display="flex" flexWrap="wrap" gap={2}>
                                                         {displaySubmissions.map((word, index) => (
