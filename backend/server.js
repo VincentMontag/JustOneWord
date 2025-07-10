@@ -19,7 +19,7 @@ const io = new Server(server, {
     cors: {
         origin: process.env.NODE_ENV === 'production'
             ? ["https://justoneword.onrender.com"] // Ihre echte Domain hier
-            : 'http://localhost:5173',
+            : 'http://localhost:5173', // Die URL des Frontends für Development
         methods: ['GET', 'POST'],
     },
 });
@@ -186,7 +186,8 @@ app.get('/api/games/:gameId/debug', (req, res) => {
 
 // React App für alle anderen Routes (Production only) - GANZ AM ENDE
 if (process.env.NODE_ENV === 'production') {
-    app.get('/{*catchall}', (req, res) => {
+    app.get('*', (req, res) => {
+        // Don't serve React app for API routes
         if (req.path.startsWith('/api/')) {
             return res.status(404).json({ error: 'API route not found' });
         }
