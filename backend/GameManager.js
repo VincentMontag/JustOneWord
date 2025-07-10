@@ -24,7 +24,7 @@ const SCORING = {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const dictionaryPath = path.resolve(__dirname, '/data/dictionary.txt');
+const dictionaryPath = path.resolve(__dirname, 'data/dictionary.txt');
 
 export async function loadRandomWord() {
     try {
