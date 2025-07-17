@@ -123,7 +123,7 @@ function Home() {
                         fontSize: "20px",
                         boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
                         "&:hover": {
-                            backgroundColor: "rgba(63, 193, 201, 0.1)",
+                            backgroundColor: "#33a1a8",
                         },
                     }}
                 >
