@@ -545,6 +545,76 @@ const GamePage = () => {
                                         )}
                                     </Box>
 
+                                    {/* Hinweise-Bereich für alle Runden ab Runde 2 */}
+                                    {gameState.round > 1 && (
+                                        <Box mb={3} p={2} sx={{ backgroundColor: "#f0f8ff", borderRadius: "8px", border: "2px solid #2196F3" }}>
+                                            <Typography
+                                                variant="body1"
+                                                gutterBottom
+                                                sx={{
+                                                    color: "#1976d2",
+                                                    fontFamily: "'Super Larky', cursive"
+                                                }}
+                                            >
+                                                Hinweise von anderen Spielern:
+                                            </Typography>
+
+                                            {displaySubmissions && displaySubmissions.length > 0 ? (
+                                                <>
+                                                    <Typography
+                                                        variant="body2"
+                                                        color="text.secondary"
+                                                        mb={2}
+                                                        sx={{ fontFamily: "'Super Larky', cursive" }}
+                                                    >
+                                                        Diese Wörter sollen dir helfen (oder verwirren)
+                                                    </Typography>
+                                                    <Box display="flex" flexWrap="wrap" gap={2}>
+                                                        {displaySubmissions.map((word, index) => (
+                                                            <Chip
+                                                                key={`${word}-${index}`}
+                                                                label={word}
+                                                                sx={{
+                                                                    fontSize: "1rem",
+                                                                    padding: "8px 12px",
+                                                                    height: "auto",
+                                                                    backgroundColor: "#e3f2fd",
+                                                                    color: "#1565c0",
+                                                                    fontFamily: "'Super Larky', cursive",
+                                                                    "&:hover": {
+                                                                        backgroundColor: "#bbdefb"
+                                                                    }
+                                                                }}
+                                                            />
+                                                        ))}
+                                                    </Box>
+                                                    <Typography
+                                                        variant="caption"
+                                                        color="text.secondary"
+                                                        sx={{
+                                                            mt: 1,
+                                                            display: "block",
+                                                            fontFamily: "'Super Larky', cursive"
+                                                        }}
+                                                    >
+                                                        Tipp: Identische Wörter wurden automatisch entfernt
+                                                    </Typography>
+                                                </>
+                                            ) : (
+                                                <Typography
+                                                    variant="body1"
+                                                    color="text.secondary"
+                                                    sx={{
+                                                        fontStyle: "italic",
+                                                        fontFamily: "'Super Larky', cursive"
+                                                    }}
+                                                >
+                                                    Alle eingereichten Wörter waren doppelt und wurden entfernt!
+                                                </Typography>
+                                            )}
+                                        </Box>
+                                    )}
+
                                     {/* AKTUELLE RUNDE: Zeige Submissions auch in Runde 1 während SUBMITTING_PHASE */}
                                     {gameState.phase === "SUBMITTING_PHASE" && displaySubmissions.length > 0 && (
                                         <Box mb={3} p={2} sx={{ backgroundColor: "#f9f9f9", borderRadius: "8px", border: "2px solid #9E9E9E" }}>
