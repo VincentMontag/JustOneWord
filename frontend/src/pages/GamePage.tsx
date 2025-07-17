@@ -533,7 +533,7 @@ const GamePage = () => {
                                                         fontFamily: "'Super Larky', cursive"
                                                     }}
                                                 >
-                                                    {gameState.playerRole === "SUPPORTER" ? "Lösungswort (Hilf dem Ratenden!):" : "😈 Lösungswort (Verwirre den Ratenden!):"}
+                                                    {gameState.playerRole === "SUPPORTER" ? "Lösungswort (Hilf dem Ratenden!):" : "Lösungswort (Verwirre den Ratenden!):"}
                                                 </Typography>
                                                 <Typography variant="body1" sx={{
                                                     fontFamily: "'Super Larky', cursive",
