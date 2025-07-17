@@ -7,6 +7,12 @@ export const socketHandlers = (io) => {
     let queue = [];
     const playerSockets = new Map();
     const readyPlayers = new Map();
+    const startTimer = new Map(); // Timer für 3s Countdown nach "alle bereit"
+
+    // Konfiguration
+    const MIN_PLAYERS = 3;
+    const MAX_PLAYERS = 11;
+    const START_DELAY = 3000; // 3 Sekunden nach "alle bereit"
 
     io.on("connection", (socket) => {
         console.log("Ein Spieler hat sich verbunden:", socket.id);
@@ -21,16 +27,58 @@ export const socketHandlers = (io) => {
                 return;
             }
 
-            queue.push({ id: socket.id, name });
-            io.emit("queue-update", queue.length);
+            // Prüfen ob Queue bereits voll ist
+            if (queue.length >= MAX_PLAYERS) {
+                socket.emit("queue-full", "Die Warteschlange ist voll. Bitte versuche es später erneut.");
+                return;
+            }
 
-            if (queue.length === 3) {
-                try {
-                    const gameId = await assignRoles(queue, io);
-                    queue.length = 0;
-                } catch (error) {
-                    console.error("Fehler bei Rollenzuteilung:", error);
-                }
+            // Prüfen ob Name bereits in Queue existiert
+            const nameExists = queue.some(player => player.name === name);
+            if (nameExists) {
+                socket.emit("name-taken", "Dieser Name ist bereits in der Warteschlange.");
+                return;
+            }
+
+            queue.push({ id: socket.id, name, ready: false });
+
+            // Queue-Update an alle senden
+            broadcastQueueUpdate();
+
+            // Prüfen ob gerade ein Start-Timer läuft und diesen stoppen
+            if (startTimer.has('global')) {
+                clearTimeout(startTimer.get('global'));
+                startTimer.delete('global');
+                console.log("Start-Timer gestoppt - neuer Spieler beigetreten");
+                io.emit("start-timer-cancelled", { reason: "Neuer Spieler beigetreten" });
+            }
+        });
+
+        // Spieler in Queue als bereit markieren
+        socket.on("queue-ready", (data) => {
+            const { name } = data;
+            const player = queue.find(p => p.id === socket.id && p.name === name);
+
+            if (player) {
+                player.ready = true;
+                broadcastQueueUpdate();
+
+                // Prüfen ob alle bereit sind und mindestens MIN_PLAYERS
+                checkAndStartGame();
+            }
+        });
+
+        // Spieler aus Queue entfernen (freiwillig)
+        socket.on("leave-queue", () => {
+            removePlayerFromQueue(socket.id);
+            broadcastQueueUpdate();
+
+            // Start-Timer stoppen falls läuft
+            if (startTimer.has('global')) {
+                clearTimeout(startTimer.get('global'));
+                startTimer.delete('global');
+                console.log("Start-Timer gestoppt - Spieler hat Queue verlassen");
+                io.emit("start-timer-cancelled", { reason: "Spieler hat Queue verlassen" });
             }
         });
 
@@ -214,10 +262,15 @@ export const socketHandlers = (io) => {
         socket.on("disconnect", () => {
             console.log("Spieler getrennt:", socket.id);
 
-            const queuePlayer = queue.find((p) => p.id === socket.id);
-            if (queuePlayer) {
-                queue = queue.filter((p) => p.id !== socket.id);
-                io.emit("queue-update", queue.length);
+            // Aus Queue entfernen
+            removePlayerFromQueue(socket.id);
+            broadcastQueueUpdate();
+
+            // Start-Timer stoppen falls läuft
+            if (startTimer.has('global')) {
+                clearTimeout(startTimer.get('global'));
+                startTimer.delete('global');
+                io.emit("start-timer-cancelled", { reason: "Spieler disconnected" });
             }
 
             for (const [gameId, players] of playerSockets.entries()) {
@@ -242,7 +295,83 @@ export const socketHandlers = (io) => {
         });
     });
 
-    // Hilfsfunktionen
+    function removePlayerFromQueue(socketId) {
+        const index = queue.findIndex(p => p.id === socketId);
+        if (index !== -1) {
+            queue.splice(index, 1);
+        }
+    }
+
+    function broadcastQueueUpdate() {
+        const queueData = {
+            players: queue.map(p => ({ name: p.name, ready: p.ready })),
+            totalPlayers: queue.length,
+            minPlayers: MIN_PLAYERS,
+            maxPlayers: MAX_PLAYERS,
+            canStart: queue.length >= MIN_PLAYERS,
+            isFull: queue.length >= MAX_PLAYERS
+        };
+
+        io.emit("queue-update", queueData);
+    }
+
+    function checkAndStartGame() {
+        if (queue.length >= MIN_PLAYERS) {
+            const allReady = queue.every(player => player.ready);
+
+            if (allReady) {
+
+                // Vorhandenen Timer stoppen
+                if (startTimer.has('global')) {
+                    clearTimeout(startTimer.get('global'));
+                }
+
+                // 3s Timer starten
+                const timer = setTimeout(() => {
+                    startGameWithCurrentQueue();
+                }, START_DELAY);
+
+                startTimer.set('global', timer);
+
+                // Countdown an alle senden
+                io.emit("start-countdown", {
+                    timeLeft: START_DELAY,
+                    message: "Spiel startet in 3 Sekunden..."
+                });
+            }
+        }
+    }
+
+    async function startGameWithCurrentQueue() {
+        if (queue.length < MIN_PLAYERS) {
+            return;
+        }
+
+        // Timer stoppen
+        if (startTimer.has('global')) {
+            clearTimeout(startTimer.get('global'));
+            startTimer.delete('global');
+        }
+
+        try {
+
+            const gameId = await assignRoles(queue, io);
+            queue.length = 0;
+            broadcastQueueUpdate();
+
+        } catch (error) {
+            console.error("Fehler bei Rollenzuteilung:", error);
+
+            // Queue-Status zurücksetzen
+            queue.forEach(player => player.ready = false);
+            broadcastQueueUpdate();
+
+            // Fehler an Clients senden
+            io.emit("game-start-error", { message: "Fehler beim Spielstart. Bitte versucht es erneut." });
+        }
+    }
+
+    // Bestehende Hilfsfunktionen
     async function initializeAndStartGame(gameId, gameData, io) {
         try {
             if (!games[gameId]) {
@@ -265,7 +394,6 @@ export const socketHandlers = (io) => {
             }
 
             await startGame(gameId);
-
             await syncAndBroadcastGameState(gameId, gameData, io);
 
         } catch (error) {
@@ -290,13 +418,11 @@ export const socketHandlers = (io) => {
         };
 
         io.to(gameId).emit("ready-status-update", updateData);
-
         return updateData;
     }
 
     async function syncAndBroadcastGameState(gameId, gameData, io, forceRefresh = false) {
         try {
-
             const players = playerSockets.get(gameId);
             if (!players) {
                 console.warn(`[${gameId}] ⚠️ Keine Spieler-Sockets gefunden`);
